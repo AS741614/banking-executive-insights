@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: esoteric_db
+    command: 
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=512MB"
+      - "-c"
+      - "effective_cache_size=1536MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "default_statistics_target=100"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "work_mem=6553kB"
+      - "-c"
+      - "min_wal_size=1GB"
+      - "-c"
+      - "max_wal_size=4GB"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    environment:
+      - POSTGRES_USER=esoteric_admin
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-governance_secret_2026}
+      - POSTGRES_DB=esoteric_bank
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - esoteric_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U esoteric_admin -d esoteric_bank"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.enterprise
+      target: api
+    container_name: esoteric_api
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://esoteric_admin:${DB_PASSWORD:-governance_secret_2026}@db:5432/esoteric_bank
+      - SECRET_KEY=${SECRET_KEY}
+      - GUNICORN_WORKERS=4
+      - GUNICORN_THREADS=4
+    ports:
+      - "8000:8000"
+    networks:
+      - esoteric_net
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.enterprise
+      target: ui
+    container_name: esoteric_ui
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - API_URL=http://api:8000/api/v1
+    ports:
+      - "8501:8501"
+    networks:
+      - esoteric_net
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: esoteric_prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - esoteric_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: esoteric_grafana
+    depends_on:
+      - prometheus
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    networks:
+      - esoteric_net
+
+networks:
+  esoteric_net:
+    driver: bridge
+
+volumes:
+  postgres_data:

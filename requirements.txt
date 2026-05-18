@@ -6,3 +6,17 @@ Faker
 python-dotenv
 PyYAML
 tabulate
+streamlit
+plotly
+requests
+fastapi
+uvicorn
+python-multipart
+jose[cryptography]
+passlib[bcrypt]
+psutil
+pydantic-settings
+email-validator
+# tableauserverclient
+# pantab
+# tableau-hyperapi
