@@ -1,0 +1,6 @@
+product_id,product_name,product_type
+1,Current Account,Deposit
+2,Savings,Deposit
+3,Mortgage,Lending
+4,Personal Loan,Lending
+5,Credit Card,Lending

@@ -1,0 +1,8 @@
+pandas
+numpy
+SQLAlchemy>=2.0
+psycopg2-binary
+Faker
+python-dotenv
+PyYAML
+tabulate
