@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import socket
+import os
 from datetime import datetime
 from typing import Dict, Any
 
@@ -37,10 +38,17 @@ class ServiceHealthMonitor:
         """
         logger.info("Initializing institutional stack health monitoring...")
         
+        db_host = os.getenv("DB_HOST", "db")
+        db_port = int(os.getenv("DB_PORT", "5432"))
+        api_host = os.getenv("API_HOST", "localhost")
+        api_port = int(os.getenv("API_PORT", "8000"))
+        ui_host = os.getenv("UI_HOST", "localhost")
+        ui_port = int(os.getenv("UI_PORT", "8501"))
+
         stack = {
-            "PostgreSQL": ("db", 5432),
-            "API Gateway": ("localhost", 8000),
-            "UI Command Center": ("localhost", 8501)
+            "PostgreSQL": (db_host, db_port),
+            "API Gateway": (api_host, api_port),
+            "UI Command Center": (ui_host, ui_port)
         }
 
         while True:

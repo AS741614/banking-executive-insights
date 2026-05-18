@@ -17,6 +17,11 @@ passlib[bcrypt]
 psutil
 pydantic-settings
 email-validator
+prometheus-client
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-exporter-otlp
 # tableauserverclient
 # pantab
 # tableau-hyperapi

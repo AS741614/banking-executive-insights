@@ -4,6 +4,7 @@ from typing import Dict, Any, List
 
 from ai.observability.services.operational_intelligence import OperationalIntelligenceService
 from ai.observability.models.telemetry import GovernanceTelemetry
+from ai.observability.services.prometheus_metrics import metrics
 
 logger = logging.getLogger("esoteric_bank.observability.telemetry_aggregator")
 
@@ -33,6 +34,13 @@ class ExecutiveTelemetryAggregator:
             "INSTITUTIONAL_CORE", 
             current_metrics
         )
+
+        # Update Prometheus Metrics
+        metrics.update_governance_telemetry(telemetry)
+        metrics.aml_severity.set(current_metrics["aml_severity_avg"])
+        metrics.kyc_approval_rate.set(current_metrics["kyc_approval_rate"])
+        metrics.fraud_prevention_efficiency.set(current_metrics["fraud_prevention_efficiency"])
+        metrics.cognition_latency.observe(current_metrics["cognition_latency_ms"] / 1000.0)
         
         return {
             "timestamp": datetime.utcnow().isoformat(),

@@ -19,20 +19,27 @@ class ScenarioOrchestrator:
     def __init__(self):
         self.active_scenario: Optional[DemoScenario] = None
         self.current_step_index: int = 0
+        self.event_log: List[Dict[str, Any]] = []
 
     async def execute_scenario(self, scenario: DemoScenario):
         """
         Executes a full demo scenario step-by-step.
         """
         self.active_scenario = scenario
+        self.event_log = []
         logger.info(f"--- STARTING DEMO SCENARIO: {scenario.name} ---")
         logger.info(f"Narrative: {scenario.executive_narrative}")
+
+        # Emit scenario start event
+        await self._emit_scenario_event("SCENARIO_STARTED", {"scenario_id": scenario.scenario_id})
 
         for step in sorted(scenario.steps, key=lambda x: x.order):
             await self._execute_step(step)
             logger.info(f"Step {step.order} complete. Waiting {step.delay_sec}s for next sequence...")
             await asyncio.sleep(step.delay_sec)
 
+        # Emit scenario complete event
+        await self._emit_scenario_event("SCENARIO_COMPLETED", {"scenario_id": scenario.scenario_id})
         logger.info(f"--- DEMO SCENARIO COMPLETE: {scenario.name} ---")
 
     async def _execute_step(self, step: DemoStep):
@@ -45,6 +52,8 @@ class ScenarioOrchestrator:
             await self._emit_cognitive_event(step)
         elif step.action_type == "GOVERNANCE_ESCALATION":
             await self._emit_governance_escalation(step)
+        elif step.action_type == "UPDATE_KPI":
+            await self._emit_kpi_update(step)
         
         if step.governance_commentary:
             logger.info(f"Governance Insights: {step.governance_commentary}")
@@ -61,7 +70,7 @@ class ScenarioOrchestrator:
             payload=payload.get("data", {}),
             governance_context={"demo_step": step.step_id}
         )
-        await event_bus.publish(event)
+        await self._publish_and_log(event)
 
     async def _emit_governance_escalation(self, step: DemoStep):
         payload = step.payload
@@ -78,6 +87,39 @@ class ScenarioOrchestrator:
                 "demo_mode": True
             }
         )
+        await self._publish_and_log(event)
+
+    async def _emit_kpi_update(self, step: DemoStep):
+        payload = step.payload
+        event = CognitiveEvent(
+            event_id=f"DEMO-KPI-{uuid.uuid4().hex[:8].upper()}",
+            trace_id=f"TRACE-DEMO-{self.active_scenario.scenario_id}",
+            category=EventCategory.OPERATIONAL,
+            severity=EventSeverity.INFO,
+            source_component="DemoOrchestrator",
+            action="KPI_UPDATE",
+            payload=payload.get("data", {}),
+            governance_context={"demo_step": step.step_id}
+        )
+        await self._publish_and_log(event)
+
+    async def _emit_scenario_event(self, action: str, data: Dict[str, Any]):
+        event = CognitiveEvent(
+            event_id=f"DEMO-SYS-{uuid.uuid4().hex[:8].upper()}",
+            trace_id=f"TRACE-DEMO-SYS",
+            category=EventCategory.OPERATIONAL,
+            severity=EventSeverity.INFO,
+            source_component="DemoOrchestrator",
+            action=action,
+            payload=data
+        )
+        await self._publish_and_log(event)
+
+    async def _publish_and_log(self, event: CognitiveEvent):
         await event_bus.publish(event)
+        self.event_log.append(event.dict())
+
+    def get_replay_data(self) -> List[Dict[str, Any]]:
+        return self.event_log
 
 from typing import Optional

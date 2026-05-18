@@ -17,6 +17,7 @@ def main():
         "COMMAND DOMAINS",
         [
             "EXECUTIVE_OVERVIEW",
+            "TREASURY_COCKPIT",
             "REGULATORY_COCKPIT",
             "GOVERNANCE_COCKPIT",
             "AI_COPILOT_CONSOLE",
@@ -31,6 +32,9 @@ def main():
     if selection == "EXECUTIVE_OVERVIEW":
         from ui.pages.executive_overview import render_executive_dashboard
         render_executive_dashboard()
+    elif selection == "TREASURY_COCKPIT":
+        from ui.pages.treasury_cockpit import render_treasury_dashboard
+        render_treasury_dashboard()
     elif selection == "REGULATORY_COCKPIT":
         from ui.pages.compliance_center import render_aml_kyc_dashboard
         render_aml_kyc_dashboard()
@@ -41,29 +45,8 @@ def main():
         from ui.pages.copilot_console import render_copilot_console
         render_copilot_console()
     elif selection == "PLATFORM_OBSERVABILITY":
-        from ui.main import render_observability_page # For now keep here
+        from ui.pages.observability_panel import render_observability_page
         render_observability_page()
-
-def render_observability_page():
-    render_institutional_header("Platform Observability")
-    
-    st.subheader("System Health & Infrastructure Topology")
-    cols = st.columns(3)
-    cols[0].metric("API Gateway", "ONLINE", "0.2ms")
-    cols[1].metric("Cognitive Core", "HEALTHY", "1.4B Ops")
-    cols[2].metric("Event Bus", "ACTIVE", "142 msg/s")
-
-    st.markdown("---")
-    st.subheader("Resource Utilization & Cognitive Load")
-    st.progress(0.42, text="Memory Utilization: 42.5GB / 128GB")
-    st.progress(0.15, text="GPU Cognition Clusters: 15.2%")
-    
-    st.subheader("Institutional Audit Logs")
-    st.code("""
-    [2026-05-18 14:22:01] TRACE-8821: AML Inference Complete.
-    [2026-05-18 14:21:45] TRACE-9912: Fraud Anomaly Detected.
-    [2026-05-18 14:20:12] SYSTEM: Policy Evolution Re-loaded.
-    """)
 
 if __name__ == "__main__":
     main()

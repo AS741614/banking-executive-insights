@@ -7,7 +7,8 @@ from ecos.contracts.base import (
     CognitiveTaskPriority, 
     CognitiveService, 
     CognitiveServiceStatus,
-    OrchestrationEvent
+    OrchestrationEvent,
+    CognitiveOrigin
 )
 from ecos.state.registry import InstitutionalStateRegistry
 
@@ -54,11 +55,12 @@ class CognitiveRuntimeCoordinator:
         priority_val = priority_map.get(task.priority, 2)
         await self._task_queue.put((priority_val, datetime.utcnow(), task))
         
-        logger.info(f"Task submitted: {task.task_id} [Priority: {task.priority.name}]")
+        logger.info(f"Task submitted: {task.task_id} [Priority: {task.priority.name}] [Origin: {task.origin.name}]")
         self.state.set_state(
             domain="tasks",
             key=task.task_id,
             value="QUEUED",
+            origin=task.origin,
             metadata={"priority": task.priority.name, "domain": task.service_domain}
         )
 
@@ -101,7 +103,13 @@ class CognitiveRuntimeCoordinator:
         """
         logger.info(f"Dispatching task {task.task_id} to service {service.name}")
         self._active_tasks[task.task_id] = task
-        self.state.set_state(domain="tasks", key=task.task_id, value="DISPATCHED", metadata={"service": service.name})
+        self.state.set_state(
+            domain="tasks", 
+            key=task.task_id, 
+            value="DISPATCHED", 
+            origin=task.origin,
+            metadata={"service": service.name}
+        )
         
         # In a real implementation, this would involve an HTTP/gRPC call to the service endpoint.
         # For this orchestration layer, we simulate the dispatch.

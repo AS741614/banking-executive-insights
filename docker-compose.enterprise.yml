@@ -44,13 +44,16 @@ services:
       - POSTGRES_DB=esoteric_bank
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     networks:
       - esoteric_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U esoteric_admin -d esoteric_bank"]
-      interval: 5s
-      timeout: 5s
+      test: ["CMD-SHELL", "pg_isready -U esoteric_admin -d esoteric_bank && psql -U esoteric_admin -d esoteric_bank -c 'SELECT 1;'"]
+      interval: 10s
+      timeout: 10s
       retries: 5
+      start_period: 20s
     logging:
       driver: "json-file"
       options:
@@ -140,6 +143,18 @@ services:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning
     ports:
       - "3000:3000"
+    networks:
+      - esoteric_net
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: esoteric_otel_collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
     networks:
       - esoteric_net
 

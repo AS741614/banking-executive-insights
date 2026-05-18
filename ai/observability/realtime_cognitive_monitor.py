@@ -8,10 +8,15 @@ from datetime import datetime
 import time
 import pandas as pd
 from sqlalchemy import text
+from prometheus_client import start_http_server
 
 from src.db import get_engine
+from ai.observability.services.prometheus_metrics import metrics
 
 engine = get_engine()
+
+# Start Prometheus exporter on port 9091 for cognitive metrics
+start_http_server(9091)
 
 HEADER = """
 ====================================================================
@@ -95,6 +100,10 @@ while True:
         total_txn_count = row["total_txn_count"]
 
         avg_net_flow = row["avg_net_flow"]
+
+        # Update Prometheus Metrics
+        metrics.transaction_count.labels(region=region, segment=segment).inc(total_txn_count)
+        metrics.liquidity_flow.labels(region=region, segment=segment).set(total_net_flow)
 
         if total_net_flow < 100000:
 

@@ -104,3 +104,103 @@ def get_fraud_prevention_scenario() -> DemoScenario:
             )
         ]
     )
+
+def get_governance_escalation_scenario() -> DemoScenario:
+    """
+    Returns the Governance Escalation demo scenario.
+    Demonstrates: Drift Detection -> Automated Mitigation Proposal -> Executive Approval.
+    """
+    return DemoScenario(
+        scenario_id="SCN-GOV-001",
+        name="Institutional Governance Escalation",
+        category=ScenarioCategory.GOVERNANCE,
+        executive_narrative="Governance drift is detected in the AML reasoning layer, triggering an automated mitigation proposal and requiring executive sign-off.",
+        steps=[
+            DemoStep(
+                step_id="STEP-1",
+                order=1,
+                title="Drift Detection",
+                description="Policy monitor identifies 35% variance in AML severity thresholds.",
+                action_type="EMIT_EVENT",
+                payload={
+                    "severity": EventSeverity.HIGH,
+                    "category": EventCategory.GOVERNANCE,
+                    "action": "GOVERNANCE_DRIFT_DETECTED",
+                    "data": {"metric": "aml_severity_avg", "variance": 0.35}
+                },
+                delay_sec=3
+            ),
+            DemoStep(
+                step_id="STEP-2",
+                order=2,
+                title="Mitigation Synthesis",
+                description="Cognitive engine generates policy evolution proposal: KYC-V4.",
+                action_type="EMIT_EVENT",
+                payload={
+                    "severity": EventSeverity.INFO,
+                    "category": EventCategory.GOVERNANCE,
+                    "action": "MITIGATION_PROPOSAL_GENERATED",
+                    "data": {"proposal_id": "KYC-V4", "risk_reduction": "HIGH"}
+                },
+                delay_sec=4
+            ),
+            DemoStep(
+                step_id="STEP-3",
+                order=3,
+                title="Executive Escalation",
+                description="Formal escalation to Tier 4 Board for policy approval.",
+                action_type="GOVERNANCE_ESCALATION",
+                payload={"data": {"proposal": "KYC-V4", "requester": "POLICY_ENGINE"}},
+                delay_sec=5
+            )
+        ]
+    )
+
+def get_liquidity_crisis_scenario() -> DemoScenario:
+    """
+    Returns the Liquidity Crisis demo scenario.
+    Demonstrates: Regional Deterioration -> KPI Impact -> Automated Treasury Response.
+    """
+    return DemoScenario(
+        scenario_id="SCN-TRE-001",
+        name="APAC Liquidity Deterioration",
+        category=ScenarioCategory.TREASURY,
+        executive_narrative="A sudden liquidity squeeze in the APAC region triggers KPI alerts and automated treasury rebalancing.",
+        steps=[
+            DemoStep(
+                step_id="STEP-1",
+                order=1,
+                title="Regional Signal",
+                description="Treasury system detects Tier 1 capital variance in APAC.",
+                action_type="UPDATE_KPI",
+                payload={
+                    "data": {"metric": "Liquidity", "value": 0.72, "region": "APAC"}
+                },
+                delay_sec=3
+            ),
+            DemoStep(
+                step_id="STEP-2",
+                order=2,
+                title="Institutional Alert",
+                description="Liquidity coverage ratio drops below 0.90 threshold.",
+                action_type="EMIT_EVENT",
+                payload={
+                    "severity": EventSeverity.CRITICAL,
+                    "action": "LIQUIDITY_CRUNCH_DETECTED",
+                    "data": {"lcr": 0.88, "threshold": 0.90}
+                },
+                delay_sec=4
+            ),
+            DemoStep(
+                step_id="STEP-3",
+                order=3,
+                title="Treasury Response",
+                description="Automated rebalancing of $450M from EMEA to APAC.",
+                action_type="UPDATE_KPI",
+                payload={
+                    "data": {"metric": "Liquidity", "value": 0.89, "region": "APAC"}
+                },
+                delay_sec=5
+            )
+        ]
+    )

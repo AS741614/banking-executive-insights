@@ -2,7 +2,7 @@ import logging
 from typing import Dict, Any, Optional, List
 from threading import Lock
 from datetime import datetime
-from ecos.contracts.base import InstitutionalState, OrchestrationEvent
+from ecos.contracts.base import InstitutionalState, OrchestrationEvent, CognitiveOrigin
 
 logger = logging.getLogger("ecos.state.registry")
 
@@ -17,7 +17,7 @@ class InstitutionalStateRegistry:
         self._lock = Lock()
         self._history: List[OrchestrationEvent] = []
 
-    def set_state(self, domain: str, key: str, value: Any, metadata: Dict[str, Any] = None) -> InstitutionalState:
+    def set_state(self, domain: str, key: str, value: Any, metadata: Dict[str, Any] = None, origin: CognitiveOrigin = CognitiveOrigin.PRODUCTION) -> InstitutionalState:
         """
         Updates or creates a state entry within a specific domain.
         """
@@ -29,6 +29,7 @@ class InstitutionalStateRegistry:
                 domain=domain,
                 key=key,
                 value=value,
+                origin=origin,
                 metadata=metadata or {}
             )
             self._state_store[domain][key] = state
@@ -53,12 +54,14 @@ class InstitutionalStateRegistry:
         with self._lock:
             return self._state_store.get(domain, {}).get(key)
 
-    def get_domain_state(self, domain: str) -> Dict[str, Any]:
+    def get_domain_state(self, domain: str, origin: Optional[CognitiveOrigin] = None) -> Dict[str, Any]:
         """
-        Retrieves all state entries for a specific domain.
+        Retrieves all state entries for a specific domain, optionally filtered by origin.
         """
         with self._lock:
             domain_data = self._state_store.get(domain, {})
+            if origin:
+                return {k: v.value for k, v in domain_data.items() if v.origin == origin}
             return {k: v.value for k, v in domain_data.items()}
 
     def flush_stale_states(self, ttl_seconds: int):

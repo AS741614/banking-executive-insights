@@ -7,8 +7,10 @@ from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.exceptions import setup_exception_handlers
 from app.core.middleware import EnterpriseObservabilityMiddleware
+from app.core.telemetry import setup_telemetry
 from app.api.v1.router import api_router
 from app.api.v1.endpoints.observability import health_check, readiness_check
+from prometheus_client import make_asgi_app
 
 # Initialize platform logging
 setup_logging()
@@ -46,6 +48,9 @@ def create_app() -> FastAPI:
     # Add Enterprise Middleware
     app.add_middleware(EnterpriseObservabilityMiddleware)
 
+    # Initialize OpenTelemetry
+    setup_telemetry(app)
+
     # Setup Exception Handlers
     setup_exception_handlers(app)
 
@@ -55,6 +60,10 @@ def create_app() -> FastAPI:
     # Root Observability Probes
     app.add_api_route("/health", health_check, methods=["GET"], tags=["Root Observability"])
     app.add_api_route("/ready", readiness_check, methods=["GET"], tags=["Root Observability"])
+
+    # Prometheus Metrics
+    metrics_app = make_asgi_app()
+    app.mount("/metrics", metrics_app)
 
     @app.get("/", include_in_schema=False)
     async def root():

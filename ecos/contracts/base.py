@@ -25,9 +25,15 @@ class CognitiveService(BaseModel):
     capabilities: List[str]
     last_heartbeat: datetime = Field(default_factory=datetime.utcnow)
 
+class CognitiveOrigin(str, Enum):
+    PRODUCTION = "PRODUCTION"   # Certified institutional data
+    SIMULATION = "SIMULATION"   # Synthetic crisis/test data
+    REPLAY = "REPLAY"           # Historical crisis analysis
+
 class CognitiveTask(BaseModel):
     task_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     priority: CognitiveTaskPriority
+    origin: CognitiveOrigin = CognitiveOrigin.PRODUCTION
     service_domain: str
     action: str
     payload: Dict[str, Any]
@@ -38,6 +44,7 @@ class CognitiveTask(BaseModel):
 class InstitutionalState(BaseModel):
     state_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    origin: CognitiveOrigin = CognitiveOrigin.PRODUCTION
     domain: str
     key: str
     value: Any

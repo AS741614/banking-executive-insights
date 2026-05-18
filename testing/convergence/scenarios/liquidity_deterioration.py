@@ -3,7 +3,7 @@ import logging
 from testing.convergence.framework import ConvergenceScenario
 from data_simulation.scenario_injector import ScenarioInjector
 from ecos.main import ecos
-from ecos.contracts.base import CognitiveTask, CognitiveTaskPriority
+from ecos.contracts.base import CognitiveTask, CognitiveTaskPriority, CognitiveOrigin
 
 logger = logging.getLogger("convergence.scenario.liquidity")
 
@@ -26,6 +26,7 @@ class LiquidityDeteriorationScenario(ConvergenceScenario):
         # Simulate ECOS awareness of the event
         await ecos.execute_institutional_directive(CognitiveTask(
             priority=CognitiveTaskPriority.CRITICAL,
+            origin=CognitiveOrigin.SIMULATION,
             service_domain="treasury",
             action="evaluate_liquidity_risk",
             payload={"region": "North", "severity": "EXTREME"}
@@ -38,8 +39,8 @@ class LiquidityDeteriorationScenario(ConvergenceScenario):
         # Allow ECOS to process the task
         await asyncio.sleep(0.5)
         
-        # 1. Check ECOS state for treasury action
-        state = ecos.state.get_domain_state("tasks")
+        # 1. Check ECOS state for treasury action - ONLY LOOK AT SIMULATION ORIGIN
+        state = ecos.state.get_domain_state("tasks", origin=CognitiveOrigin.SIMULATION)
         treasury_tasks = [v for k, v in state.items() if v == "DISPATCHED"]
         
         # 2. Verify institutional awareness
