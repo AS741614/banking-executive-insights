@@ -14,19 +14,19 @@ class ExecutiveStateAwareness:
     def __init__(self, state_registry: InstitutionalStateRegistry):
         self.state = state_registry
 
-    def get_executive_snapshot(self) -> Dict[str, Any]:
+    async def get_executive_snapshot(self) -> Dict[str, Any]:
         """
         Generates a summary of the enterprise cognitive state.
         """
-        topology = self.state.get_domain_state("topology")
-        system_status = self.state.get_state("system", "runtime_status")
+        topology = await self.state.get_domain_state("topology")
+        system_status = await self.state.get_state("system", "runtime_status")
         
         # Calculate health metrics
         total_services = len(topology)
         online_services = sum(1 for s in topology.values() if s.get("status") == CognitiveServiceStatus.ONLINE)
         
         # Aggregate active tasks
-        tasks = self.state.get_domain_state("tasks")
+        tasks = await self.state.get_domain_state("tasks")
         queued_tasks = sum(1 for status in tasks.values() if status == "QUEUED")
         dispatched_tasks = sum(1 for status in tasks.values() if status == "DISPATCHED")
         

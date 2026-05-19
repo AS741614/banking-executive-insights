@@ -47,6 +47,20 @@ class PrometheusMetrics:
             "Fraud prevention efficiency"
         )
         
+        # Adaptive Cognition Metrics
+        self.governance_drift = Gauge(
+            "esoteric_governance_drift_index",
+            "Institutional governance drift index"
+        )
+        self.liquidity_risk = Gauge(
+            "esoteric_liquidity_risk_score",
+            "Real-time liquidity risk score"
+        )
+        self.anomalies_detected = Gauge(
+            "esoteric_anomalies_total",
+            "Total anomalies detected by cognitive agents"
+        )
+        
         # Performance
         self.cognition_latency = Histogram(
             "esoteric_cognition_latency_seconds",

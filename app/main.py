@@ -9,8 +9,8 @@ from app.core.exceptions import setup_exception_handlers
 from app.core.middleware import EnterpriseObservabilityMiddleware
 from app.core.telemetry import setup_telemetry
 from app.api.v1.router import api_router
-from app.api.v1.endpoints.observability import health_check, readiness_check
 from prometheus_client import make_asgi_app
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # Initialize platform logging
 setup_logging()
@@ -21,6 +21,10 @@ async def lifespan(app: FastAPI):
     # Startup Logic: Institutional Validation
     logger.info(f"Bootstrapping {settings.PROJECT_NAME} (Version: {settings.VERSION})")
     logger.info(f"Environment: {settings.ENVIRONMENT} | Debug: {settings.DEBUG}")
+    
+    # Boot ECOS Kernel (Adaptive Runtime)
+    from ecos.main import ecos
+    await ecos.boot()
     
     # Validate critical paths
     import os
@@ -33,6 +37,7 @@ async def lifespan(app: FastAPI):
     
     # Shutdown Logic: Clean-up
     logger.info("Shutting down ESOTERIC Platform...")
+    await ecos.shutdown()
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -40,8 +45,8 @@ def create_app() -> FastAPI:
         version=settings.VERSION,
         description="Production-grade FastAPI application for the ESOTERIC BANK Intelligence Platform.",
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url=f"{settings.API_V1_STR}/docs",
+        redoc_url=f"{settings.API_V1_STR}/redoc",
         lifespan=lifespan
     )
 
@@ -57,14 +62,9 @@ def create_app() -> FastAPI:
     # Include API Routers
     app.include_router(api_router, prefix=settings.API_V1_STR)
     
-    # Root Observability Probes
-    app.add_api_route("/health", health_check, methods=["GET"], tags=["Root Observability"])
-    app.add_api_route("/ready", readiness_check, methods=["GET"], tags=["Root Observability"])
-
-    # Prometheus Metrics
-    metrics_app = make_asgi_app()
-    app.mount("/metrics", metrics_app)
-
+    # Prometheus Instrumentation & Metrics
+    Instrumentator().instrument(app).expose(app)
+    
     @app.get("/", include_in_schema=False)
     async def root():
         """Redirects root to the API documentation."""

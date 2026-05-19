@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Any, List
 
 from ai.events.engines.event_bus import event_bus
-from ai.regulatory.fraud.engines.fraud_engine import FraudDetectionEngine
+from ai.regulatory.fraud.services.fraud_engine import FraudIntelligenceEngine
 from ai.regulatory.aml.services.aml_surveillance_engine import AMLSurveillanceEngine
 from ai.actions.services.orchestration_service import ActionOrchestrationService
 
@@ -16,7 +16,7 @@ class ConvergenceValidationFramework:
     """
 
     def __init__(self):
-        self.fraud_engine = FraudDetectionEngine()
+        self.fraud_engine = FraudIntelligenceEngine()
         self.aml_engine = AMLSurveillanceEngine()
         self.orchestration = ActionOrchestrationService()
         self.validation_results = {
@@ -29,13 +29,12 @@ class ConvergenceValidationFramework:
     async def validate_fraud_containment(self):
         logger.info("Validating: Fraud Containment Logic")
         # Simulate passing the emulator payload to the fraud engine
-        transaction_data = {"device_context": {"emulator": True, "vpn": True}}
-        profile = await self.fraud_engine.execute_fraud_cognition(
+        pattern_data = {"patterns": ["account_takeover_pattern", "CRITICAL_THREAT: EMULATOR_DETECTED"], "device_risk": 0.9, "geo_risk": 0.8, "anomaly_score": 0.95}
+        profile = await self.fraud_engine.analyze_fraud_risk(
             customer_id="TEST-CUST",
-            transaction_data=transaction_data,
-            historical_context={}
+            pattern_data=pattern_data
         )
-        if profile.governance_action == "BLOCK" and "CRITICAL_THREAT: EMULATOR_DETECTED" in profile.detected_patterns:
+        if profile.is_blocked and "CRITICAL_THREAT: EMULATOR_DETECTED" in profile.pattern_profile.detected_patterns:
             self.validation_results["fraud_containment"] = True
             logger.info("[PASS] Fraud containment successfully triggered hard-block for emulator.")
         else:

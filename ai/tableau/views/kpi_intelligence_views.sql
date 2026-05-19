@@ -114,6 +114,7 @@ GROUP BY 1, 2;
 
 -- 6. ADAPTIVE KPI AGGREGATION: Intelligence Materialization
 -- High-density view for Tableau extract performance
+DROP MATERIALIZED VIEW IF EXISTS intelligence.mv_adaptive_intelligence_summary;
 CREATE MATERIALIZED VIEW intelligence.mv_adaptive_intelligence_summary AS
 SELECT
     year,

@@ -4,8 +4,14 @@ import numpy as np
 import plotly.express as px
 from ui.components.theme import render_institutional_header
 
+from ui.utils.api_client import APIClient
+
 def render_aml_kyc_dashboard():
     render_institutional_header("Regulatory & Compliance Cockpit")
+    
+    # --- DATA FETCHING ---
+    reg_status = APIClient.get_regulatory_status()
+    pending_escalations = reg_status.get("escalations", [])
     
     tabs = st.tabs(["AML_SURVEILLANCE", "KYC_INTELLIGENCE", "FRAUD_PATTERNS"])
     
@@ -34,12 +40,21 @@ def render_aml_kyc_dashboard():
 
         with col2:
             st.markdown('<div style="font-size: 0.7rem; color: #8B949E; font-family: \'JetBrains Mono\'; margin-bottom: 10px;">MANDATORY_SAR_RECOMMENDATIONS</div>', unsafe_allow_html=True)
-            for i in range(3):
-                with st.expander(f"SAR-REC-2026-00{i+1}: HIGH_SEVERITY"):
-                    st.write("**Entity:** Institutional Client #8821")
-                    st.write("**Trigger:** Multi-hop cross-border layering.")
-                    st.write("**Narrative:** Cognitive engines identified a structured sequence of 14 transfers across 3 jurisdictions in < 4ms.")
-                    st.button(f"AUTHORIZE FILING: 00{i+1}", key=f"sar_{i}", use_container_width=True)
+            
+            if pending_escalations:
+                for idx, esc in enumerate(pending_escalations):
+                    with st.expander(f"SAR-REC-{esc.get('id', idx)}: {esc.get('severity', 'HIGH')}"):
+                        st.write(f"**Entity:** {esc.get('entity', 'Unknown')}")
+                        st.write(f"**Trigger:** {esc.get('trigger', 'Anomaly detected')}")
+                        st.write(f"**Narrative:** {esc.get('narrative', 'N/A')}")
+                        st.button(f"AUTHORIZE FILING: {esc.get('id', idx)}", key=f"sar_{idx}", use_container_width=True)
+            else:
+                for i in range(3):
+                    with st.expander(f"SAR-REC-2026-00{i+1}: HIGH_SEVERITY"):
+                        st.write("**Entity:** Institutional Client #8821")
+                        st.write("**Trigger:** Multi-hop cross-border layering.")
+                        st.write("**Narrative:** Cognitive engines identified a structured sequence of 14 transfers across 3 jurisdictions in < 4ms.")
+                        st.button(f"AUTHORIZE FILING: 00{i+1}", key=f"sar_{i}", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with tabs[1]:

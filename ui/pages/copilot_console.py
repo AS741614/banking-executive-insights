@@ -101,7 +101,7 @@ def render_copilot_console():
     # --- AUTO-NARRATION LOGIC ---
     if narration_mode:
         from ui.utils.api_client import APIClient
-        events = APIClient.get_event_stream()
+        events = APIClient.get_event_history()
         if events:
             last_event = events[0]
             last_event_id = last_event.get("event_id")

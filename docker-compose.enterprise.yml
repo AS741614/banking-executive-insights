@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   db:
@@ -81,7 +81,7 @@ services:
       - ENVIRONMENT=production
       - DATABASE_URL=postgresql://esoteric_admin:${DB_PASSWORD:-governance_secret_2026}@db:5432/esoteric_bank
       - SECRET_KEY=${SECRET_KEY}
-      - GUNICORN_WORKERS=4
+      - GUNICORN_WORKERS=1
       - GUNICORN_THREADS=4
     ports:
       - "8000:8000"
@@ -139,6 +139,10 @@ services:
     container_name: esoteric_grafana
     depends_on:
       - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=esoteric_admin
+      - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning
     ports:
@@ -146,18 +150,18 @@ services:
     networks:
       - esoteric_net
 
-  otel-collector:
-    image: otel/opentelemetry-collector:latest
-    container_name: esoteric_otel_collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "4317:4317"
-      - "4318:4318"
-    networks:
-      - esoteric_net
-
+#   otel-collector:
+#     image: otel/opentelemetry-collector:latest
+#     container_name: esoteric_otel_collector
+#     command: ["--config=/etc/otel-collector-config.yaml"]
+#     volumes:
+#       - ./docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+#     ports:
+#       - "4317:4317"
+#       - "4318:4318"
+#     networks:
+#       - esoteric_net
+# 
 networks:
   esoteric_net:
     driver: bridge

@@ -16,22 +16,36 @@ def render_executive_dashboard():
 
     render_institutional_header("Executive Command Center")
     
+    # --- DATA FETCHING ---
+    exec_intel = APIClient.get_executive_intelligence()
+    risk_intel = APIClient.get_risk_intelligence()
+    gov_intel = APIClient.get_governance_cognition()
+    platform_status = APIClient.get_platform_status()
+    events = APIClient.get_event_history()
+
     # --- TOP TIER COCKPIT ---
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Institutional AUM", "$4.82T", "+0.45%")
+        aum = exec_intel.get("aum", "$4.82T")
+        aum_delta = exec_intel.get("aum_delta", "+0.45%")
+        st.metric("Institutional AUM", aum, aum_delta)
         if walkthrough_mode:
             st.caption("Total assets under management across all regional clusters.")
     with col2:
-        st.metric("Governance Drift", "0.04%", "-0.01%", delta_color="inverse")
+        drift = gov_intel.get("drift_score", "0.04%")
+        drift_delta = "-0.01%" if not gov_intel.get("drift_detected") else "+0.05%"
+        st.metric("Governance Drift", drift, drift_delta, delta_color="inverse")
         if walkthrough_mode:
             st.caption("Real-time variance from institutional policy baselines.")
     with col3:
-        st.metric("Cognitive Load", "12.4K TPM", "+1.2K")
+        load = platform_status.get("cognitive_load", "12.4K TPM")
+        st.metric("Cognitive Load", load, "+1.2K")
         if walkthrough_mode:
             st.caption("Transactions processed by the multi-agent reasoning layer.")
     with col4:
-        st.metric("System Resilience", "99.999%", "STABLE")
+        health = platform_status.get("health_score", "99.999%")
+        status_label = platform_status.get("status", "STABLE").upper()
+        st.metric("System Resilience", health, status_label)
         if walkthrough_mode:
             st.caption("Aggregated health score of all critical infrastructure components.")
 
@@ -44,18 +58,23 @@ def render_executive_dashboard():
         # HUD Panel: Treasury Performance
         st.markdown('<div class="hud-panel"><div class="hud-panel-title">Treasury Performance & Liquidity Velocity</div>', unsafe_allow_html=True)
         
-        months = pd.date_range(start='2026-01-01', periods=12, freq='M')
-        data = pd.DataFrame({
-            'Month': months,
-            'Tier 1 Capital': 100 + np.random.randn(12).cumsum(),
-            'Liquidity': 85 + np.random.randn(12).cumsum(),
-            'Risk Exposure': 20 + np.random.randn(12).cumsum()
-        })
+        # Use live data if available in exec_intel
+        perf_data = exec_intel.get("performance_series")
+        if perf_data:
+            data = pd.DataFrame(perf_data)
+        else:
+            months = pd.date_range(start='2026-01-01', periods=12, freq='ME')
+            data = pd.DataFrame({
+                'Month': months,
+                'Tier 1 Capital': 100 + np.random.randn(12).cumsum(),
+                'Liquidity': 85 + np.random.randn(12).cumsum(),
+                'Risk Exposure': 20 + np.random.randn(12).cumsum()
+            })
         
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data['Month'], y=data['Tier 1 Capital'], name='TIER_1_CAPITAL', line=dict(color='#00FF41', width=3), fill='tozeroy', fillcolor='rgba(0, 255, 65, 0.05)'))
-        fig.add_trace(go.Scatter(x=data['Month'], y=data['Liquidity'], name='LIQUIDITY_INDEX', line=dict(color='#FFD700', width=2, dash='dot')))
-        fig.add_trace(go.Scatter(x=data['Month'], y=data['Risk Exposure'], name='RISK_EXPOSURE', line=dict(color='#FF3E3E', width=2)))
+        fig.add_trace(go.Scatter(x=data.get('Month', data.index), y=data['Tier 1 Capital'], name='TIER_1_CAPITAL', line=dict(color='#00FF41', width=3), fill='tozeroy', fillcolor='rgba(0, 255, 65, 0.05)'))
+        fig.add_trace(go.Scatter(x=data.get('Month', data.index), y=data['Liquidity'], name='LIQUIDITY_INDEX', line=dict(color='#FFD700', width=2, dash='dot')))
+        fig.add_trace(go.Scatter(x=data.get('Month', data.index), y=data['Risk Exposure'], name='RISK_EXPOSURE', line=dict(color='#FF3E3E', width=2)))
         
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',
@@ -69,11 +88,12 @@ def render_executive_dashboard():
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10))
         )
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        
+        insight = exec_intel.get("insight", "Treasury performance is currently within 1.2% of predicted baseline.")
         if walkthrough_mode:
-            st.markdown("""
+            st.markdown(f"""
                 <div style="font-size: 0.8rem; color: #8B949E; border-left: 2px solid #FFD700; padding: 10px; background-color: rgba(255, 215, 0, 0.05); margin-bottom: 15px;">
-                    <strong>COGNITIVE INSIGHT:</strong> Treasury performance is currently within 1.2% of predicted baseline. 
-                    Liquidity velocity remains stable despite regional volatility.
+                    <strong>COGNITIVE INSIGHT:</strong> {insight}
                 </div>
             """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -83,7 +103,12 @@ def render_executive_dashboard():
         
         regions = ["NORTH_AMER", "EUROPE_CENTRAL", "ASIA_PACIFIC", "LATAM_SOUTHERN", "MIDDLE_EAST_AFRICA"]
         metrics = ["AML_SYNC", "KYC_DRIFT", "LIQUIDITY_V1", "REG_REPORTING"]
-        z_data = np.random.rand(len(regions), len(metrics))
+        
+        heatmap_data = gov_intel.get("regional_drift")
+        if heatmap_data:
+            z_data = np.array(heatmap_data)
+        else:
+            z_data = np.random.rand(len(regions), len(metrics))
         
         fig_heat = px.imshow(z_data,
                         labels=dict(x="Governance Domain", y="Jurisdiction", color="Risk Level"),
@@ -101,10 +126,12 @@ def render_executive_dashboard():
             coloraxis_showscale=False
         )
         st.plotly_chart(fig_heat, use_container_width=True, config={'displayModeBar': False})
-        if walkthrough_mode:
-            st.markdown("""
+        
+        critical_drift = gov_intel.get("critical_drift_insight")
+        if walkthrough_mode and critical_drift:
+            st.markdown(f"""
                 <div style="font-size: 0.8rem; color: #8B949E; border-left: 2px solid #FF3E3E; padding: 10px; background-color: rgba(255, 62, 62, 0.05);">
-                    <strong>ATTENTION:</strong> ASIA_PACIFIC jurisdiction shows significant drift (RED) in AML reasoning patterns.
+                    <strong>ATTENTION:</strong> {critical_drift}
                 </div>
             """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -113,7 +140,6 @@ def render_executive_dashboard():
         # HUD Panel: Live Cognitive Stream
         st.markdown('<div class="hud-panel" style="height: 620px; overflow-y: hidden;"><div class="hud-panel-title">Live Cognitive Stream</div>', unsafe_allow_html=True)
         
-        events = APIClient.get_event_stream()
         if not events:
             events = [
                 {"timestamp": "14:22:01", "category": "AML", "action": "Large block detected: APAC-CLUSTER-9", "severity": "HIGH"},

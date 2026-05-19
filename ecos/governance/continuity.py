@@ -19,7 +19,24 @@ class GovernanceContinuityLayer:
             "critical_priority_required_for": ["system_reboot", "global_freeze"]
         }
 
-    def validate_task(self, task: CognitiveTask) -> bool:
+    async def handle_state_update(self, event: OrchestrationEvent):
+        """
+        Proactively handles state update events to adjust governance posture.
+        """
+        domain = event.metadata.get("domain")
+        key = event.metadata.get("key")
+        value = event.metadata.get("value")
+        
+        if domain == "system" and key == "runtime_status":
+            if value == "DEGRADED":
+                logger.warning("Governance Posture: AUTOMATIC ESCALATION triggered due to DEGRADED system status.")
+                # Automatically tighten policies
+                await self.update_policy("max_task_latency", 10)
+            elif value == "OPERATIONAL":
+                logger.info("Governance Posture: NORMALIZING due to OPERATIONAL system status.")
+                await self.update_policy("max_task_latency", 60)
+
+    async def validate_task(self, task: CognitiveTask) -> bool:
         """
         Validates a task against institutional governance policies.
         """
@@ -37,7 +54,7 @@ class GovernanceContinuityLayer:
             return False
             
         # Rule 3: Execution Context Check
-        system_status = self.state.get_state("system", "runtime_status")
+        system_status = await self.state.get_state("system", "runtime_status")
         if system_status and system_status.value == "DEGRADED" and task.priority == CognitiveTaskPriority.LOW:
             logger.warning(f"Task {task.task_id} suppressed due to DEGRADED system state.")
             return False
@@ -60,13 +77,13 @@ class GovernanceContinuityLayer:
         # (Assuming the registry instance is shared)
         # In a real system, this would be an atomic update.
 
-    def update_policy(self, policy_key: str, value: Any):
+    async def update_policy(self, policy_key: str, value: Any):
         """
         Updates a governance policy dynamically.
         """
         logger.info(f"Governance Policy Updated: {policy_key} = {value}")
         self._policy_registry[policy_key] = value
-        self.state.set_state(
+        await self.state.set_state(
             domain="governance",
             key=f"policy_{policy_key}",
             value=value,

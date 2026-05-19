@@ -5,8 +5,11 @@ import requests
 import time
 from datetime import datetime
 
+from ..runtime.config import TableauConfig
+
 # Configuration
-DB_URL = os.getenv("DATABASE_URL", "postgresql://esoteric_admin:governance_secret_2026@localhost:5432/esoteric_bank")
+config = TableauConfig()
+DB_URL = os.getenv("DATABASE_URL", config.pg_connection_string)
 TABLEAU_GATEWAY = "http://localhost:8501" # Simulating the Streamlit gateway for this demo
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

@@ -14,10 +14,10 @@ def sync_tableau_runtime():
     print("--- ESOTERIC Tableau Runtime Sync ---")
     
     # 1. Load institutional configuration
-    user = os.getenv("DB_USER", "esoteric_admin")
-    database = os.getenv("DB_NAME", "esoteric_bank")
+    user = os.getenv("DB_USER", "dwh")
+    database = os.getenv("DB_NAME", "bank_dwh")
     host = os.getenv("DB_HOST", "localhost")
-    password = os.getenv("DB_PASSWORD", "governance_secret_2026")
+    password = os.getenv("DB_PASSWORD", "dwh")
     
     config = TableauConnectionConfig(
         username=user,

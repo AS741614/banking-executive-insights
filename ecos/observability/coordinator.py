@@ -15,11 +15,11 @@ class CognitiveObservabilityCoordination:
     def __init__(self, state_registry: InstitutionalStateRegistry):
         self.state = state_registry
 
-    def export_orchestration_metrics(self):
+    async def export_orchestration_metrics(self):
         """
         Exports current orchestration events and metrics to institutional logs.
         """
-        events = self.state.get_event_history(limit=50)
+        events = await self.state.get_event_history(limit=50)
         logger.info(f"Exporting {len(events)} orchestration events to institutional audit log.")
         
         for event in events:
@@ -37,13 +37,13 @@ class CognitiveObservabilityCoordination:
             # For now, we use structured standard output
             logger.info(f"AUDIT_LOG: {json.dumps(log_entry)}")
 
-    def get_system_telemetry(self) -> Dict[str, Any]:
+    async def get_system_telemetry(self) -> Dict[str, Any]:
         """
         Aggregates system-level telemetry for observability dashboards.
         """
-        system_state = self.state.get_domain_state("system")
+        system_state = await self.state.get_domain_state("system")
         return {
             "kernel_status": system_state.get("kernel_status", "UNKNOWN"),
-            "event_velocity": len(self.state.get_event_history(limit=100)),
+            "event_velocity": len(await self.state.get_event_history(limit=100)),
             "last_sync": system_state.get("active_topology_version", 0)
         }

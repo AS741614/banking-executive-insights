@@ -32,15 +32,15 @@ class WarehouseConnectivityValidator:
             # Check for critical Tableau-ready views
             cur.execute("""
                 SELECT count(*) FROM (
-                    SELECT table_name FROM information_schema.tables WHERE table_name = 'mv_kpi_month'
+                    SELECT table_name FROM information_schema.views WHERE table_name = 'vw_executive_kpis' AND table_schema = 'intelligence'
                     UNION
-                    SELECT matviewname FROM pg_matviews WHERE matviewname = 'mv_kpi_month'
+                    SELECT matviewname FROM pg_matviews WHERE matviewname = 'mv_adaptive_intelligence_summary' AND schemaname = 'intelligence'
                 ) as unified_views;
             """)
-            if cur.fetchone()[0] > 0:
-                print(f"[OK] Analytical view 'mv_kpi_month' is present.")
+            if cur.fetchone()[0] >= 2:
+                print(f"[OK] Intelligence views are present.")
             else:
-                print(f"[WARN] Analytical view 'mv_kpi_month' missing. Check ETL status.")
+                print(f"[WARN] Intelligence views missing. Check deployment status.")
 
             cur.close()
             conn.close()
@@ -62,7 +62,7 @@ class WarehouseConnectivityValidator:
             )
             start = time.time()
             cur = conn.cursor()
-            cur.execute("SELECT count(*) FROM raw_transactions;")
+            cur.execute("SELECT count(*) FROM mart.fact_transaction;")
             cur.fetchone()
             latency = (time.time() - start) * 1000
             print(f"[INFO] Analytical Latency: {latency:.2f}ms")

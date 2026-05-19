@@ -29,7 +29,7 @@ SELECT
     )
 FROM generate_series(
     '2023-01-01'::date,
-    '2025-12-31'::date,
+    '2026-12-31'::date,
     '1 day'
 ) d;
 

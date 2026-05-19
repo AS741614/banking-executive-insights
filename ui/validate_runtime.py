@@ -38,7 +38,7 @@ def main():
         # sys.exit(1) # Don't exit, just warn for now as per "senior" advice
         
     print("\n--- API Connectivity Check ---")
-    api_ready = check_api("http://localhost:8000/health")
+    api_ready = check_api("http://localhost:8000/api/v1/platform/health")
     
     if api_ready:
         print("[SUCCESS] Runtime environment is stabilized.")

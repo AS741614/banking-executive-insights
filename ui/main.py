@@ -1,9 +1,10 @@
+import os
 import streamlit as st
 import requests
 from ui.components.theme import apply_enterprise_theme, render_institutional_header
 
 # Constants
-API_URL = "http://localhost:8000/api/v1"
+API_URL = os.getenv("API_URL", "http://localhost:8000/api/v1")
 
 def main():
     apply_enterprise_theme()

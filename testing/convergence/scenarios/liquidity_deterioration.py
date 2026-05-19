@@ -40,11 +40,11 @@ class LiquidityDeteriorationScenario(ConvergenceScenario):
         await asyncio.sleep(0.5)
         
         # 1. Check ECOS state for treasury action - ONLY LOOK AT SIMULATION ORIGIN
-        state = ecos.state.get_domain_state("tasks", origin=CognitiveOrigin.SIMULATION)
+        state = await ecos.state.get_domain_state("tasks", origin=CognitiveOrigin.SIMULATION)
         treasury_tasks = [v for k, v in state.items() if v == "DISPATCHED"]
         
         # 2. Verify institutional awareness
-        awareness = ecos.awareness.get_executive_snapshot()
+        awareness = await ecos.awareness.get_executive_snapshot()
         health = awareness.get("institutional_health", {})
         
         self.results["dispatched_tasks"] = len(treasury_tasks)

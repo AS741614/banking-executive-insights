@@ -18,6 +18,7 @@ class DistributedCognitionScheduler:
         self.coordinator = coordinator
         self._scheduled_tasks: List[tuple[datetime, CognitiveTask]] = []
         self._is_running = False
+        self._task_scheduled_event = asyncio.Event()
 
     def schedule_task(self, task: CognitiveTask, delay_seconds: int = 0):
         """
@@ -26,6 +27,8 @@ class DistributedCognitionScheduler:
         run_at = datetime.utcnow() + timedelta(seconds=delay_seconds)
         heapq.heappush(self._scheduled_tasks, (run_at, task))
         logger.info(f"Task {task.task_id} scheduled for {run_at.isoformat()}")
+        self._task_scheduled_event.set()
+        self._task_scheduled_event.clear()
 
     async def _scheduler_loop(self):
         """
@@ -33,7 +36,8 @@ class DistributedCognitionScheduler:
         """
         while self._is_running:
             if not self._scheduled_tasks:
-                await asyncio.sleep(1)
+                # Operationalized: Wait for event instead of sleep(1) polling
+                await self._task_scheduled_event.wait()
                 continue
             
             now = datetime.utcnow()
@@ -46,7 +50,11 @@ class DistributedCognitionScheduler:
             else:
                 # Sleep until the next task is ready or check again soon
                 wait_time = (run_at - now).total_seconds()
-                await asyncio.sleep(min(wait_time, 1))
+                try:
+                    # Operationalized: Wait for event OR next task time, whichever is first
+                    await asyncio.wait_for(self._task_scheduled_event.wait(), timeout=min(wait_time, 1))
+                except asyncio.TimeoutError:
+                    pass
 
     async def start(self):
         """

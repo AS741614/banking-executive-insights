@@ -63,4 +63,5 @@ class OrchestrationEvent(BaseModel):
     event_type: str
     description: str
     severity: str # INFO, WARNING, ERROR, CRITICAL
+    correlation_id: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)

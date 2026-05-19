@@ -15,7 +15,7 @@ echo -e "${GREEN}>>> Initializing ESOTERIC BANK Intelligence Gateway...${NC}"
 python3 ui/validate_runtime.py
 
 # 2. Check if API is already running in background
-curl -s http://localhost:8000/health > /dev/null
+curl -s http://localhost:8000/api/v1/platform/health > /dev/null
 if [ $? -ne 0 ]; then
     echo -e "${YELLOW}>>> Warning: Backend API (FastAPI) not detected at localhost:8000${NC}"
     echo -e "${YELLOW}>>> UI will be initialized in OFFLINE/MOCK mode.${NC}"

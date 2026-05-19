@@ -27,8 +27,8 @@ class InstitutionalRuntimeSynchronization:
                 logger.info("Executing institutional runtime synchronization...")
                 
                 # 1. Topology Synchronization
-                current_topology = self.topology.get_current_topology()
-                self.state.set_state(
+                current_topology = await self.topology.get_current_topology()
+                await self.state.set_state(
                     domain="system",
                     key="active_topology_version",
                     value=current_topology.version,
@@ -36,7 +36,7 @@ class InstitutionalRuntimeSynchronization:
                 )
                 
                 # 2. State Cleanup
-                self.state.flush_stale_states(ttl_seconds=3600)
+                await self.state.flush_stale_states(ttl_seconds=3600)
                 
                 # 3. Observability Sync
                 # In a real system, this would push metrics to Prometheus/Grafana

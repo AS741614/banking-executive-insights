@@ -3,8 +3,11 @@ import psycopg2
 import logging
 from datetime import datetime, timedelta
 
+from ..runtime.config import TableauConfig
+
 # Configuration
-DB_URL = os.getenv("DATABASE_URL", "postgresql://esoteric_admin:governance_secret_2026@localhost:5432/esoteric_bank")
+config = TableauConfig()
+DB_URL = os.getenv("DATABASE_URL", config.pg_connection_string)
 FRESHNESS_THRESHOLD_HOURS = 24
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -56,7 +59,7 @@ class DatasourceObserver:
                     INSERT INTO governance.datasource_metrics 
                     (datasource_name, source_type, schema_name, table_name, last_refreshed_at, row_count_baseline, drift_status)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (datasource_id) DO UPDATE SET
+                    ON CONFLICT (datasource_name) DO UPDATE SET
                     last_refreshed_at = EXCLUDED.last_refreshed_at,
                     row_count_baseline = EXCLUDED.row_count_baseline,
                     drift_status = EXCLUDED.drift_status;

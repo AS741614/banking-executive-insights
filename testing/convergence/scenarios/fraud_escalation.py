@@ -39,12 +39,12 @@ class FraudEscalationScenario(ConvergenceScenario):
         # Allow ECOS to process the task
         await asyncio.sleep(0.5)
         
-        events = ecos.state.get_event_history()
+        events = await ecos.state.get_event_history()
         # Verify events - in a real scenario we'd filter by origin if events had them
         # For now we check the task state by origin
         
         # Check if the task is in the registry - ONLY LOOK AT SIMULATION ORIGIN
-        state = ecos.state.get_domain_state("tasks", origin=CognitiveOrigin.SIMULATION)
+        state = await ecos.state.get_domain_state("tasks", origin=CognitiveOrigin.SIMULATION)
         has_freeze_task = any(v == "DISPATCHED" for k, v in state.items())
         
         self.results["fraud_events_count"] = len(events)

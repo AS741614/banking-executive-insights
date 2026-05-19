@@ -8,10 +8,10 @@ class TableauConnectionConfig(BaseModel):
     """
     server: str = Field(default="localhost")
     port: int = Field(default=5432)
-    database: str = Field(default="esoteric_bank")
-    username: str = Field(default="esoteric_admin")
-    password: str = Field(..., description="Institutional database credential")
-    ssl_mode: str = Field(default="require")
+    database: str = Field(default="bank_dwh")
+    username: str = Field(default="dwh")
+    password: str = Field(default="dwh")
+    ssl_mode: str = Field(default="prefer")
     
     # Tableau specific metadata
     datasource_name: str = Field(default="ESOTERIC_WAREHOUSE_LIVE")

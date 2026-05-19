@@ -26,19 +26,24 @@ class CognitiveRuntimeCoordinator:
         self._task_queue: asyncio.PriorityQueue = asyncio.PriorityQueue()
         self._active_tasks: Dict[str, CognitiveTask] = {}
         self._is_running = False
+        self._service_registered_event = asyncio.Event()
 
-    def register_service(self, service: CognitiveService):
+    async def register_service(self, service: CognitiveService):
         """
         Registers a new cognitive service into the ECOS topology.
         """
         self._services[service.service_id] = service
-        self.state.set_state(
+        await self.state.set_state(
             domain="topology",
             key=service.service_id,
             value=service.dict(),
             metadata={"type": "service_registration"}
         )
         logger.info(f"Service registered: {service.name} ({service.service_id})")
+        
+        # Notify the processing loop that a new service is available
+        self._service_registered_event.set()
+        self._service_registered_event.clear()
 
     async def submit_task(self, task: CognitiveTask):
         """
@@ -56,12 +61,16 @@ class CognitiveRuntimeCoordinator:
         await self._task_queue.put((priority_val, datetime.utcnow(), task))
         
         logger.info(f"Task submitted: {task.task_id} [Priority: {task.priority.name}] [Origin: {task.origin.name}]")
-        self.state.set_state(
+        await self.state.set_state(
             domain="tasks",
             key=task.task_id,
             value="QUEUED",
             origin=task.origin,
-            metadata={"priority": task.priority.name, "domain": task.service_domain}
+            metadata={
+                "priority": task.priority.name, 
+                "domain": task.service_domain,
+                "correlation_id": task.correlation_id
+            }
         )
 
     async def _process_tasks(self):
@@ -72,16 +81,23 @@ class CognitiveRuntimeCoordinator:
             try:
                 priority, ts, task = await self._task_queue.get()
                 
-                # Find available service for the domain
-                target_service = self._find_service_for_domain(task.service_domain)
-                
-                if target_service:
-                    await self._dispatch_task(task, target_service)
-                else:
-                    logger.warning(f"No active service found for domain: {task.service_domain}. Re-queueing...")
-                    # Backoff and re-queue
-                    await asyncio.sleep(1)
-                    await self._task_queue.put((priority, ts, task))
+                while self._is_running:
+                    # Find available service for the domain
+                    target_service = self._find_service_for_domain(task.service_domain)
+                    
+                    if target_service:
+                        await self._dispatch_task(task, target_service)
+                        break
+                    else:
+                        logger.warning(f"No active service found for domain: {task.service_domain}. Waiting for service registration...")
+                        # Wait for a new service to be registered before trying again
+                        try:
+                            # Operationalized: Wait for event instead of sleep(1) polling
+                            await asyncio.wait_for(self._service_registered_event.wait(), timeout=30.0)
+                        except asyncio.TimeoutError:
+                            logger.info(f"Timeout waiting for service for domain {task.service_domain}. Re-queueing task.")
+                            await self._task_queue.put((priority, ts, task))
+                            break
                 
                 self._task_queue.task_done()
             except Exception as e:
@@ -103,17 +119,19 @@ class CognitiveRuntimeCoordinator:
         """
         logger.info(f"Dispatching task {task.task_id} to service {service.name}")
         self._active_tasks[task.task_id] = task
-        self.state.set_state(
+        await self.state.set_state(
             domain="tasks", 
             key=task.task_id, 
             value="DISPATCHED", 
             origin=task.origin,
-            metadata={"service": service.name}
+            metadata={
+                "service": service.name,
+                "correlation_id": task.correlation_id
+            }
         )
         
-        # In a real implementation, this would involve an HTTP/gRPC call to the service endpoint.
-        # For this orchestration layer, we simulate the dispatch.
-        await asyncio.sleep(0.1) 
+        # Operationalized: No more asyncio.sleep(0.1) placeholder.
+        # The state update already published a STATE_UPDATE event which triggers downstream orchestration.
 
     async def start(self):
         """
@@ -123,7 +141,7 @@ class CognitiveRuntimeCoordinator:
         self._is_running = True
         asyncio.create_task(self._process_tasks())
         
-        self.state.set_state(
+        await self.state.set_state(
             domain="system",
             key="runtime_status",
             value="OPERATIONAL",

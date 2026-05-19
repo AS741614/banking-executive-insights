@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS governance.dashboard_health_logs (
 -- 2. DATASOURCE OBSERVABILITY
 CREATE TABLE IF NOT EXISTS governance.datasource_metrics (
     datasource_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    datasource_name TEXT NOT NULL,
+    datasource_name TEXT NOT NULL UNIQUE,
     source_type TEXT, -- 'POSTGRES', 'SNOWFLAKE', 'HYPER'
     schema_name TEXT,
     table_name TEXT,

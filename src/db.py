@@ -13,7 +13,10 @@ def get_engine(retries=5, delay=2):
     Returns a hardened SQLAlchemy engine with optimized connection pooling.
     Implements a fail-safe retry mechanism for institutional resilience.
     """
-    url = os.environ["DWH_URL"]
+    url = os.environ.get("DWH_URL") or os.environ.get("DATABASE_URL")
+    if not url:
+        logger.error("Database connection URL (DWH_URL or DATABASE_URL) not found in environment.")
+        raise KeyError("DWH_URL or DATABASE_URL")
     
     # Enhanced Connection Pooling for Enterprise Stability
     # - pool_size: 20 connections per process

@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     GEMINI_CLI_PATH: str = os.getenv("GEMINI_CLI_PATH", "gemini")
     COGNITION_TIMEOUT_SEC: int = int(os.getenv("COGNITION_TIMEOUT_SEC", "60"))
     
+    # Telemetry
+    PROMETHEUS_METRICS_ENABLED: bool = os.getenv("PROMETHEUS_METRICS_ENABLED", "True").lower() in ("true", "1", "yes")
+    
     # Paths
     BASE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     DATA_DIR: str = os.path.join(BASE_DIR, "data")

@@ -318,3 +318,10 @@ Akash Sharma
 Data Analytics • BI Engineering • AI Systems • Enterprise Analytics
 
 
+* operational runtime overview
+* observability stack
+* API endpoints
+* Grafana credentials
+* startup instructions
+* crisis validation commands
+* Docker runtime instructions

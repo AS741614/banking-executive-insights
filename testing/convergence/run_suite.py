@@ -37,7 +37,7 @@ async def initialize_ecos_for_testing():
     ]
     
     for svc in services:
-        ecos.register_institutional_service(svc)
+        await ecos.register_institutional_service(svc)
     
     logger.info("ECOS initialized with mock services for convergence testing.")
 
@@ -45,14 +45,18 @@ async def run_convergence_suite():
     """
     Executes the full suite of institutional convergence tests.
     """
+    logger.info("Initializing ECOS...")
     await initialize_ecos_for_testing()
     
+    logger.info("ECOS Initialized. Setting up runner...")
     runner = ConvergenceTestRunner()
     runner.add_scenario(LiquidityDeteriorationScenario())
     runner.add_scenario(FraudEscalationScenario())
     
+    logger.info("Starting convergence suite...")
     success = await runner.run_all()
     
+    logger.info(f"Convergence suite complete. Success: {success}")
     # Generate Convergence Report
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     report = f"""# ESOTERIC BANK - Institutional Convergence Report

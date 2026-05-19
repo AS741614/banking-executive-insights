@@ -33,17 +33,19 @@ async def evaluate_kyc(profile: CustomerKYCCognitionProfile, request: Request) -
         data=updated_profile
     )
 
+from app.services.warehouse_service import WarehouseService
+
 @router.get("/escalations/pending")
 async def get_pending_escalations(request: Request) -> Any:
     """
     Retrieves pending regulatory escalations.
     """
-    # In a real system, this would query a database/memory store.
+    escalations = WarehouseService.get_pending_escalations()
     return EnterpriseResponse(
         meta=EnterpriseMetadata(
             status="success",
             timestamp=datetime.utcnow().isoformat(),
             version="1.0"
         ),
-        data={"pending_count": 0, "escalations": []}
+        data={"pending_count": len(escalations), "escalations": escalations}
     )
