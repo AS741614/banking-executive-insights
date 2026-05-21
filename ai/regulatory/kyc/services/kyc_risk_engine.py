@@ -1,6 +1,7 @@
 import logging
+import uuid
 from datetime import datetime
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 from ai.regulatory.kyc.models.customer_profile import (
     CustomerKYCCognitionProfile,
@@ -9,6 +10,9 @@ from ai.regulatory.kyc.models.customer_profile import (
     LifecycleStatus,
     GovernanceAuditMetadata
 )
+from ai.events.engines.event_bus import event_bus
+from ai.events.models.event import CognitiveEvent, EventCategory, EventSeverity
+from ai.events.contracts.event_types import CognitiveEventType
 
 logger = logging.getLogger("esoteric_bank.compliance.kyc_risk_engine")
 
@@ -22,12 +26,13 @@ class KYCRiskCognitionEngine:
         self.governance_version = governance_version
 
     async def evaluate_customer_profile(
-        self, profile: CustomerKYCCognitionProfile
+        self, profile: CustomerKYCCognitionProfile, trace_id: Optional[str] = None
     ) -> CustomerKYCCognitionProfile:
         """
         Executes a full cognitive risk assessment cycle on a customer profile.
         """
-        logger.info(f"Initiating risk cognition cycle for customer: {profile.identity.customer_id}")
+        effective_trace_id = trace_id or str(uuid.uuid4())
+        logger.info(f"Initiating risk cognition cycle for customer: {profile.identity.customer_id} | Trace: {effective_trace_id}")
 
         # 1. Evaluate AML and Exposure Severity
         aml_severity, exposure_reasons = self._calculate_aml_severity(profile)
@@ -58,8 +63,47 @@ class KYCRiskCognitionEngine:
             })
         })
 
+        # 6. Emit Institutional Cognitive Event
+        await self._emit_kyc_event(updated_profile, effective_trace_id)
+
         logger.info(f"Risk cognition cycle complete. Status: {compliance_status}, Tier: {governance_tier}")
         return updated_profile
+
+    async def _emit_kyc_event(self, profile: CustomerKYCCognitionProfile, trace_id: str):
+        """
+        Emits a KYC_EVALUATION_COMPLETED event into the institutional event chain.
+        """
+        # Determine event severity based on compliance status
+        severity = EventSeverity.INFO
+        if profile.compliance_status == ComplianceStatus.REJECTED:
+            severity = EventSeverity.CRITICAL
+        elif profile.compliance_status == ComplianceStatus.UNDER_REVIEW:
+            severity = EventSeverity.HIGH
+
+        event = CognitiveEvent(
+            event_id=str(uuid.uuid4()),
+            trace_id=trace_id,
+            timestamp=datetime.utcnow(),
+            category=EventCategory.COMPLIANCE,
+            severity=severity,
+            source_component="KYCRiskCognitionEngine",
+            action=CognitiveEventType.KYC_EVALUATION_COMPLETED,
+            payload={
+                "customer_id": profile.identity.customer_id,
+                "compliance_status": profile.compliance_status,
+                "governance_tier": profile.governance_tier,
+                "edd_required": profile.edd_profile.edd_required,
+                "event_version": "v1",
+                "source_domain": "REGULATORY_KYC",
+                "cognition_context": {
+                    "governance_version": self.governance_version,
+                    "engine_id": "KYC_CORE_L4"
+                }
+            }
+        )
+
+        await event_bus.publish(event)
+        logger.debug(f"KYC event emitted for {profile.identity.customer_id}")
 
     def _calculate_aml_severity(self, profile: CustomerKYCCognitionProfile) -> Tuple[float, List[str]]:
         reasons = []

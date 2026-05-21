@@ -224,3 +224,14 @@ final_*.md
 system_validation/
 operationalization/
 MASTER_SYSTEM_TREE.txt
+
+# Next.js
+.next/
+out/
+node_modules/
+
+# Docker
+*.tar
+
+# Runtime
+openapi_pretty.json

@@ -38,38 +38,87 @@ class ServiceHealthMonitor:
         """
         logger.info("Initializing institutional stack health monitoring...")
         
-        db_host = os.getenv("DB_HOST", "db")
+        # 1. Environment and Runtime Mode Resolution
+        env = os.getenv("ENVIRONMENT", "development")
+        runtime_mode = os.getenv("RUNTIME_MODE", "auto") # auto, local, docker, hybrid, frontend-only
+        
+        # 2. Database Resolution Strategy
+        db_url = os.getenv("DATABASE_URL")
+        db_host = os.getenv("DB_HOST")
         db_port = int(os.getenv("DB_PORT", "5432"))
-        api_host = os.getenv("API_HOST", "localhost")
-        api_port = int(os.getenv("API_PORT", "8000"))
-        ui_host = os.getenv("UI_HOST", "localhost")
-        ui_port = int(os.getenv("UI_PORT", "8501"))
 
+        # Automatic resolution if not explicitly set
+        if not db_host:
+            if runtime_mode == "docker":
+                db_host = "db"
+            elif runtime_mode == "local":
+                db_host = "localhost"
+            else:
+                db_host = "db" if env == "production" else "localhost"
+
+        # Override from DATABASE_URL if present
+        if db_url:
+            from urllib.parse import urlparse
+            try:
+                parsed = urlparse(db_url)
+                if parsed.hostname:
+                    db_host = parsed.hostname
+                if parsed.port:
+                    db_port = parsed.port
+            except Exception:
+                logger.warning("Failed to parse DATABASE_URL for health monitoring.")
+
+        # 3. Stack Definition
         stack = {
-            "PostgreSQL": (db_host, db_port),
-            "API Gateway": (api_host, api_port),
-            "UI Command Center": (ui_host, ui_port)
+            "API Gateway": (os.getenv("API_HOST", "localhost"), int(os.getenv("API_PORT", "8000"))),
+            "Next.js Experience Layer": (os.getenv("UI_HOST", "localhost"), int(os.getenv("UI_PORT", "3000")))
         }
+
+        # Handle Intentional Degraded Mode and Frontend-Only Suppression
+        intentional_degraded = not db_url or runtime_mode == "frontend-only"
+        
+        if runtime_mode != "frontend-only":
+            stack["PostgreSQL"] = (db_host, db_port)
+            if intentional_degraded:
+                logger.info("Institutional persistence not configured. Monitoring in DEGRADED mode.")
 
         while True:
             for service, (host, port) in stack.items():
                 is_alive = await self.check_port_availability(host, port)
                 
                 if service not in self._health_registry:
-                    self._health_registry[service] = {"failures": 0, "status": "UNKNOWN"}
+                    self._health_registry[service] = {
+                        "failures": 0, 
+                        "status": "UNKNOWN",
+                        "last_alert_time": 0
+                    }
+
+                current_time = datetime.utcnow().timestamp()
+                service_data = self._health_registry[service]
 
                 if not is_alive:
-                    self._health_registry[service]["failures"] += 1
-                    logger.warning(f"Service {service} unreachable ({host}:{port}). Failures: {self._health_registry[service]['failures']}")
+                    service_data["failures"] += 1
+                    
+                    # Distinguish between intentional degraded mode vs unexpected failure
+                    is_expected_unreachable = (service == "PostgreSQL" and intentional_degraded)
+                    
+                    if not is_expected_unreachable:
+                        if service_data["failures"] <= 1 or env == "production":
+                            logger.warning(f"Service {service} unreachable ({host}:{port}). Failures: {service_data['failures']}")
+                    
+                    # Logic for critical alerts
+                    if service_data["failures"] >= self._failure_threshold and not is_expected_unreachable:
+                        if service_data["status"] != "DEGRADED" or (current_time - service_data["last_alert_time"] > 3600):
+                            service_data["status"] = "DEGRADED"
+                            service_data["last_alert_time"] = current_time
+                            logger.critical(f"Service {service} is critically DEGRADED. Triggering resilience protocols.")
+                    elif is_expected_unreachable:
+                        service_data["status"] = "DEGRADED_INTENTIONAL"
                 else:
-                    if self._health_registry[service]["status"] == "DEGRADED":
-                        logger.info(f"Service {service} has RECOVERED.")
-                    self._health_registry[service]["failures"] = 0
-                    self._health_registry[service]["status"] = "HEALTHY"
-
-                if self._health_registry[service]["failures"] >= self._failure_threshold:
-                    self._health_registry[service]["status"] = "DEGRADED"
-                    logger.critical(f"Service {service} is critically DEGRADED. Triggering resilience protocols.")
+                    if service_data["status"] in ["DEGRADED", "DEGRADED_INTENTIONAL"]:
+                        logger.info(f"Service {service} has RECOVERED/CONNECTED.")
+                    service_data["failures"] = 0
+                    service_data["status"] = "HEALTHY"
 
             await asyncio.sleep(10)
 

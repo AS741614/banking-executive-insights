@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import cognition, observability, executive, regulatory
+from app.api.v1.endpoints import cognition, observability, executive, regulatory, governance
 
 api_router = APIRouter()
 
@@ -10,6 +10,9 @@ api_router.include_router(observability.router, prefix="/observability", tags=["
 
 # Regulatory Cognition Domain
 api_router.include_router(regulatory.router, prefix="/regulatory", tags=["Regulatory"])
+
+# Governance Intelligence Domain
+api_router.include_router(governance.router, prefix="/governance", tags=["Governance"])
 
 # To satisfy the exact root endpoints required like /health, we can also map them directly in main.py,
 # but for modularity, let's include them here and handle root in main.py if needed.

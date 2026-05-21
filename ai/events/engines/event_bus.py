@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Any
 from ai.events.models.event import CognitiveEvent
 
 logger = logging.getLogger("esoteric_bank.events.event_bus")
@@ -15,22 +15,24 @@ class CognitiveEventBus:
         self._subscribers: Dict[str, List[Callable]] = {}
         self._event_history: List[CognitiveEvent] = []
 
-    def subscribe(self, category: str, callback: Callable):
-        if category not in self._subscribers:
-            self._subscribers[category] = []
-        self._subscribers[category].append(callback)
-        logger.debug(f"Subscriber registered for category: {category}")
+    def subscribe(self, category: Any, callback: Callable):
+        cat_key = str(category.value) if hasattr(category, "value") else str(category)
+        if cat_key not in self._subscribers:
+            self._subscribers[cat_key] = []
+        self._subscribers[cat_key].append(callback)
+        logger.debug(f"[BUS_{id(self)}] Subscriber registered for category: {cat_key}")
 
     async def publish(self, event: CognitiveEvent):
         """
         Publishes an event to all interested subscribers.
         """
         self._event_history.append(event)
-        logger.info(f"Event Published: {event.event_id} | Category: {event.category} | Action: {event.action}")
+        cat_key = str(event.category.value) if hasattr(event.category, "value") else str(event.category)
+        logger.info(f"[BUS_{id(self)}] Event Published: {event.event_id} | Category: {cat_key} | Action: {event.action}")
         
         # In a real system, this would be an async dispatch to a queue (e.g., Kafka)
-        if event.category in self._subscribers:
-            tasks = [callback(event) for callback in self._subscribers[event.category]]
+        if cat_key in self._subscribers:
+            tasks = [callback(event) for callback in self._subscribers[cat_key]]
             await asyncio.gather(*tasks, return_exceptions=True)
 
     def get_history(self, limit: int = 100) -> List[CognitiveEvent]:

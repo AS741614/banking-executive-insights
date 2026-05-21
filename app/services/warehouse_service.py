@@ -19,6 +19,9 @@ class WarehouseService:
         Retrieves top-level institutional metrics from the data mart.
         """
         engine = get_engine()
+        if not engine:
+            return {"error": "Warehouse in DEGRADED MODE", "insight": "Institutional data currently unavailable"}
+
         query = """
         SELECT 
             SUM(net_flow) as aggregate_net_flow,
@@ -47,6 +50,9 @@ class WarehouseService:
         Retrieves regional risk and anomaly data.
         """
         engine = get_engine()
+        if not engine:
+            return {"risk_level": "DEGRADED", "anomalies_detected": 0, "regional_breakdown": []}
+
         query = """
         SELECT 
             b.region,
@@ -96,6 +102,9 @@ class WarehouseService:
         from sklearn.linear_model import LinearRegression
         
         engine = get_engine()
+        if not engine:
+            return {"trend": "STABLE (DEGRADED)", "prediction_model": "FAILOVER_LOCAL"}
+
         query = """
         SELECT (dd.year * 12 + dd.month) as time_key, SUM(fam.net_flow) as monthly_flow
         FROM mart.fact_account_month fam
@@ -134,6 +143,9 @@ class WarehouseService:
         Queries for pending regulatory escalations.
         """
         engine = get_engine()
+        if not engine:
+            return []
+
         query = "SELECT * FROM raw.fact_governance_sim LIMIT 10"
         try:
             with engine.connect() as conn:

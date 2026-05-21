@@ -21,6 +21,17 @@ class Settings(BaseSettings):
     GEMINI_CLI_PATH: str = os.getenv("GEMINI_CLI_PATH", "gemini")
     COGNITION_TIMEOUT_SEC: int = int(os.getenv("COGNITION_TIMEOUT_SEC", "60"))
     
+    # CORS
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:8501",
+        "https://dashboard.esoteric.bank"
+    ]
+
+    UI_HOST: str = os.getenv("UI_HOST", "localhost")
+    UI_PORT: int = int(os.getenv("UI_PORT", "3000"))
+    
     # Telemetry
     PROMETHEUS_METRICS_ENABLED: bool = os.getenv("PROMETHEUS_METRICS_ENABLED", "True").lower() in ("true", "1", "yes")
     

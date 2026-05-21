@@ -8,23 +8,30 @@ from sqlalchemy.exc import OperationalError
 load_dotenv()
 logger = logging.getLogger("src.db")
 
-def get_engine(retries=5, delay=2):
+_DEGRADED_MODE = False
+
+def get_engine(retries=3, delay=1):
     """
     Returns a hardened SQLAlchemy engine with optimized connection pooling.
     Implements a fail-safe retry mechanism for institutional resilience.
+    Supports environment-aware fallback for local development.
     """
+    global _DEGRADED_MODE
+    
+    env = os.environ.get("ENVIRONMENT", "development")
     url = os.environ.get("DWH_URL") or os.environ.get("DATABASE_URL")
-    if not url:
-        logger.error("Database connection URL (DWH_URL or DATABASE_URL) not found in environment.")
-        raise KeyError("DWH_URL or DATABASE_URL")
     
-    # Enhanced Connection Pooling for Enterprise Stability
-    # - pool_size: 20 connections per process
-    # - max_overflow: 10 extra connections
-    # - pool_timeout: 30s before failing
-    # - pool_recycle: 1800s to prevent stale connections
-    # - pool_pre_ping: Validates connection before each use (Essential for transient failures)
+    # Environment-aware resolution
+    if not url or (env == "development" and "db:" in url):
+        if not _DEGRADED_MODE:
+            logger.warning("No valid database URL found. Entering INSTITUTIONAL DEGRADED MODE (Local Fallback).")
+            _DEGRADED_MODE = True
+        return None
+
+    if _DEGRADED_MODE:
+        return None
     
+    # ... rest of connection logic ...
     for attempt in range(retries):
         try:
             engine = create_engine(
@@ -45,5 +52,10 @@ def get_engine(retries=5, delay=2):
                 logger.warning(f"Database connection attempt {attempt + 1} failed. Retrying in {delay}s...")
                 time.sleep(delay)
             else:
-                logger.error("Final database connection attempt failed. Institutional runtime stability compromised.")
-                raise e
+                if env == "production":
+                    logger.error("Final database connection attempt failed. Institutional runtime stability compromised.")
+                    raise e
+                else:
+                    logger.warning("Database unavailable. Falling back to DEGRADED MODE to preserve runtime stability.")
+                    _DEGRADED_MODE = True
+                    return None

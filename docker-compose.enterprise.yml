@@ -1,9 +1,12 @@
-# version: '3.8'
+# ESOTERIC BANK Institutional Enterprise Runtime
+# Authoritative Configuration for Production-Grade Orchestration
 
 services:
+  # [DATABASE]
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: esoteric_db
+    restart: always
     command: 
       - "postgres"
       - "-c"
@@ -12,102 +15,91 @@ services:
       - "shared_buffers=512MB"
       - "-c"
       - "effective_cache_size=1536MB"
-      - "-c"
-      - "maintenance_work_mem=128MB"
-      - "-c"
-      - "checkpoint_completion_target=0.9"
-      - "-c"
-      - "wal_buffers=16MB"
-      - "-c"
-      - "default_statistics_target=100"
-      - "-c"
-      - "random_page_cost=1.1"
-      - "-c"
-      - "effective_io_concurrency=200"
-      - "-c"
-      - "work_mem=6553kB"
-      - "-c"
-      - "min_wal_size=1GB"
-      - "-c"
-      - "max_wal_size=4GB"
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
     environment:
-      - POSTGRES_USER=esoteric_admin
+      - POSTGRES_USER=${DB_USER:-esoteric_admin}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-governance_secret_2026}
-      - POSTGRES_DB=esoteric_bank
+      - POSTGRES_DB=${DB_NAME:-esoteric_bank}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5433:5432"
+      - "5433:5432" # Host: 5433 to avoid collision
     networks:
       - esoteric_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U esoteric_admin -d esoteric_bank && psql -U esoteric_admin -d esoteric_bank -c 'SELECT 1;'"]
-      interval: 10s
-      timeout: 10s
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
       retries: 5
-      start_period: 20s
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
 
+  # [BACKEND API]
   api:
     build:
       context: .
       dockerfile: docker/Dockerfile.enterprise
       target: api
     container_name: esoteric_api
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-        reservations:
-          cpus: '1.0'
-          memory: 1G
+    restart: always
     depends_on:
       db:
         condition: service_healthy
+    env_file: .env
     environment:
       - ENVIRONMENT=production
-      - DATABASE_URL=postgresql://esoteric_admin:${DB_PASSWORD:-governance_secret_2026}@db:5432/esoteric_bank
-      - SECRET_KEY=${SECRET_KEY}
-      - GUNICORN_WORKERS=1
-      - GUNICORN_THREADS=4
+      - DATABASE_URL=postgresql://${DB_USER:-esoteric_admin}:${DB_PASSWORD:-governance_secret_2026}@db:5432/${DB_NAME:-esoteric_bank}
+      - DWH_URL=postgresql://${DB_USER:-esoteric_admin}:${DB_PASSWORD:-governance_secret_2026}@db:5432/${DB_NAME:-esoteric_bank}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - PROMETHEUS_METRICS_ENABLED=True
+      - UI_HOST=experience-layer
+      - UI_PORT=3000
     ports:
       - "8000:8000"
     networks:
       - esoteric_net
-    restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/platform/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
+  # [EXPERIENCE LAYER]
+  experience-layer:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+    container_name: esoteric_experience_layer
+    restart: always
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    networks:
+      - esoteric_net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # [LEGACY UI]
   ui:
     build:
       context: .
       dockerfile: docker/Dockerfile.enterprise
       target: ui
     container_name: esoteric_ui
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
+    restart: always
     depends_on:
       api:
         condition: service_healthy
@@ -117,54 +109,67 @@ services:
       - "8501:8501"
     networks:
       - esoteric_net
-    restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # [PROMETHEUS]
   prometheus:
     image: prom/prometheus:latest
     container_name: esoteric_prometheus
+    restart: always
     volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     ports:
       - "9090:9090"
     networks:
       - esoteric_net
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
 
+  # [GRAFANA]
   grafana:
     image: grafana/grafana:latest
     container_name: esoteric_grafana
+    restart: always
     depends_on:
       - prometheus
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=esoteric_admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-esoteric_admin}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
-      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
-      - "3000:3000"
+      - "3002:3000" # Host: 3002 to avoid collision
     networks:
       - esoteric_net
 
-#   otel-collector:
-#     image: otel/opentelemetry-collector:latest
-#     container_name: esoteric_otel_collector
-#     command: ["--config=/etc/otel-collector-config.yaml"]
-#     volumes:
-#       - ./docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-#     ports:
-#       - "4317:4317"
-#       - "4318:4318"
-#     networks:
-#       - esoteric_net
-# 
+  # [OTEL COLLECTOR]
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: esoteric_otel_collector
+    restart: always
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8889:8889" # Prometheus metrics
+    networks:
+      - esoteric_net
+
 networks:
   esoteric_net:
     driver: bridge
 
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:

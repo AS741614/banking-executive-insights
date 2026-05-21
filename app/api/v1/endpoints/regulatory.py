@@ -21,7 +21,7 @@ async def evaluate_kyc(profile: CustomerKYCCognitionProfile, request: Request) -
     Performs dynamic risk scoring and governance tiering.
     """
     trace_id = request.headers.get("X-Enterprise-Trace-Id")
-    updated_profile = await kyc_engine.evaluate_customer_profile(profile)
+    updated_profile = await kyc_engine.evaluate_customer_profile(profile, trace_id=trace_id)
     
     return EnterpriseResponse(
         meta=EnterpriseMetadata(

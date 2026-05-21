@@ -18,7 +18,8 @@ class DatabaseMigrator:
             "01_schema.sql",
             "02_transform.sql",
             "03_analytics.sql",
-            "04_data_quality.sql"
+            "04_data_quality.sql",
+            "05_institutional_governance.sql"
         ]
 
     def execute_migrations(self):

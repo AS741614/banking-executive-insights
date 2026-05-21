@@ -11,6 +11,7 @@ from app.core.telemetry import setup_telemetry
 from app.api.v1.router import api_router
 from prometheus_client import make_asgi_app
 from prometheus_fastapi_instrumentator import Instrumentator
+from fastapi.middleware.cors import CORSMiddleware
 
 # Initialize platform logging
 setup_logging()
@@ -44,14 +45,24 @@ def create_app() -> FastAPI:
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
         description="Production-grade FastAPI application for the ESOTERIC BANK Intelligence Platform.",
-        openapi_url=f"{settings.API_V1_STR}/openapi.json",
-        docs_url=f"{settings.API_V1_STR}/docs",
-        redoc_url=f"{settings.API_V1_STR}/redoc",
+        openapi_url="/openapi.json",
+        docs_url="/docs",
+        redoc_url="/redoc",
         lifespan=lifespan
     )
 
     # Add Enterprise Middleware
     app.add_middleware(EnterpriseObservabilityMiddleware)
+
+    # CORS Reconciliation: Handle OPTIONS preflight and cross-origin institutional requests
+    if settings.BACKEND_CORS_ORIGINS:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     # Initialize OpenTelemetry
     setup_telemetry(app)

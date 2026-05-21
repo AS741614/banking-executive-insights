@@ -11,6 +11,8 @@ from ecos.reports.executive_awareness import ExecutiveStateAwareness
 from ecos.observability.coordinator import CognitiveObservabilityCoordination
 from ecos.contracts.base import CognitiveTask, CognitiveService
 from ecos.core.event_bus import event_bus
+from ai.governance.services.intelligence import governance_intelligence
+from ai.regulatory.workflows.kyc_lifecycle import kyc_orchestrator
 from runtime.performance import optimizer
 from runtime.health.monitor import monitor
 
@@ -58,7 +60,13 @@ class EnterpriseCognitionOS:
         # Optimize Event Loop for Production
         optimizer.optimize_event_loop()
         
-        # Setup Reactive Subscriptions
+        # 1. Activate Governance Intelligence Reactivity
+        await governance_intelligence.start()
+        
+        # 2. Activate KYC Lifecycle Orchestration
+        await kyc_orchestrator.start()
+        
+        # 3. Setup Reactive Subscriptions
         await self.setup_subscriptions()
         
         # Start core components
@@ -90,13 +98,18 @@ class EnterpriseCognitionOS:
     async def handle_cognitive_event(self, event):
         """
         Handles events from the cognitive bus and reflects them in the ECOS state.
+        Bridges events to the live event streamer for SSE propagation.
         """
         await self.state.set_state(
             domain="events",
             key=event.event_id,
-            value=event.dict(),
+            value=event.model_dump() if hasattr(event, "model_dump") else event.dict(),
             metadata={"category": event.category, "severity": event.severity}
         )
+        
+        # Bridge to live Event Streamer for SSE propagation
+        from ai.events.engines.event_streamer import event_streamer
+        await event_streamer.publish(event)
         
         # Adaptive Metric Propagation
         if event.action == "LIQUIDITY_DETERIORATION":

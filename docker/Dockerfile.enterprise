@@ -50,7 +50,7 @@ CMD ["sh", "-c", "gunicorn app.main:app -w ${GUNICORN_WORKERS:-4} -k uvicorn.wor
 
 # --- UI Runtime Stage ---
 FROM base as ui
-COPY ui/ ./ui/
+COPY ui-legacy/ ./ui/
 RUN chown -R appuser:appgroup /app/ui
 USER appuser
 EXPOSE 8501
