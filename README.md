@@ -1,291 +1,155 @@
-ESOTERIC BANK Intelligence Platform
+# ESOTERIC BANK | Intelligence Platform
+### Institutional Governance • Real-time Cognition • Executive Experience
+
+![Architecture](https://img.shields.io/badge/Architecture-Institutional_ECOS-00D1FF?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Production_Ready-00FFAE?style=for-the-badge)
+![Environment](https://img.shields.io/badge/Env-Docker_Orchestrated-7B61FF?style=for-the-badge)
+
+ESOTERIC BANK is a high-density institutional intelligence platform designed for executive oversight, regulatory governance, and real-time operational awareness. It transforms raw banking telemetry into governed institutional cognition.
+
+---
+
+## 🏛️ Institutional Architecture
+
+The platform is powered by the **Enterprise Cognition Operating System (ECOS)**, a reactive kernel that orchestrates institutional state across distributed domains.
+
+```mermaid
+graph TD
+    subgraph "Experience Layer (Next.js 16)"
+        UI[Executive Dashboard]
+        SSE_H[useEventStream Hook]
+        UI --> SSE_H
+    end
+
+    subgraph "Cognition Kernel (FastAPI / Async Python)"
+        API[Institutional API]
+        ECOS_K[ECOS Kernel]
+        BUS[Cognitive Event Bus]
+        REG[Institutional State Registry]
+        STR[Event Streamer]
+        
+        API --> BUS
+        BUS --> ECOS_K
+        ECOS_K --> REG
+        ECOS_K --> STR
+    end
+
+    subgraph "Persistence & Observability"
+        DB[(PostgreSQL 15)]
+        PROM[Prometheus]
+        GRAF[Grafana]
+        OTEL[OTEL Collector]
+        
+        REG --> DB
+        API -.-> OTEL
+        API -.-> PROM
+        GRAF --> PROM
+    end
+
+    STR -- "Live SSE Stream" --> SSE_H
+```
+
+### Core Stack
+- **Experience Layer**: Next.js 16 (App Router), TypeScript Strict, Tailwind CSS 4, Framer Motion.
+- **Cognition Kernel**: FastAPI, Async Python 3.11, Pydantic v2.
+- **Persistence Layer**: PostgreSQL 15 (Optimized for institutional consistency).
+- **Observability**: OpenTelemetry (OTEL), Prometheus, Grafana.
+- **Orchestration**: Docker Unified Enterprise Runtime.
+
+---
+
+## 🧠 Governance Intelligence System
+
+The Governance Layer enforces institutional guardrails through autonomous drift detection and reactive escalation workflows.
+
+```mermaid
+sequenceDiagram
+    participant KYC as KYC Engine
+    participant BUS as Event Bus
+    participant ORCH as KYC Orchestrator
+    participant GOV as Governance Service
+    participant STATE as State Registry
+    participant SSE as SSE Streamer
+
+    KYC->>BUS: KYC_EVALUATION_COMPLETED (REJECTED)
+    BUS->>ORCH: Trigger Lifecycle Logic
+    ORCH->>BUS: REGULATORY_ESCALATION
+    BUS->>GOV: Register Escalation
+    GOV->>STATE: Update Governance Posture (DEGRADED)
+    STATE->>SSE: Broadcast Global Signal
+```
+
+- **Cognition Aggregator**: Centralizes signals from KYC, AML, and Treasury domains.
+- **Drift Detection**: Real-time monitoring of policy variance and compliance slippage.
+- **Regulatory Escalation**: Event-driven workflow orchestration (PENDING → EVALUATING → ESCALATED).
+- **Audit Traceability**: Cryptographic-grade audit logging for every institutional action.
+
+---
+
+## 📡 Real-time Cognition & SSE
+
+The platform utilizes a reactive event-driven architecture to propagate institutional intelligence instantly.
+
+```text
+[KYC Engine] -> (CognitiveEvent) -> [ECOS Event Bus] -> [State Registry]
+                                                                ↓
+[Executive Dashboard] <- (Live SSE Stream) <- [Institutional Bridge]
+```
+
+- **Forensic Measurement**: Hardened Recharts integration with `ResizeObserver` synchronization.
+- **Silent Runtime**: Zero-warning hydration and dimension stability.
+- **Event Consistency**: Trace ID propagation from API ingress to dashboard rendering.
 
-Enterprise-grade adaptive banking intelligence platform integrating cognitive risk analysis, institutional observability, governance orchestration, real-time event propagation, warehouse-backed analytics, and executive operational telemetry.
+---
 
-⸻
+## 🎮 Executive Scenario Console
 
-Executive Overview
+Operators can validate institutional resilience through the built-in Simulation Engine.
 
-ESOTERIC BANK is an enterprise banking intelligence and adaptive cognition platform designed to simulate institutional-grade operational orchestration.
+- **KYC Injection**: Simulate high-risk customer evaluations and blockages.
+- **Governance Spikes**: Inject synthetic drift into treasury or compliance domains.
+- **Operational Surges**: Simulate kernel-level resource anomalies.
 
-The platform combines:
+---
 
-* Enterprise Banking Intelligence
-* Adaptive Risk Cognition
-* Governance Drift Detection
-* Distributed Event Orchestration
-* Real-Time Observability
-* Executive Telemetry
-* Warehouse Analytics
-* Crisis Cascade Simulation
-* Regulatory Intelligence
-* Enterprise Dashboarding
-* Institutional Runtime Validation
+## 📊 Deployment & Orchestration
 
-The system operates as a unified enterprise operational environment with synchronized backend intelligence, observability infrastructure, and executive runtime surfaces.
+The entire platform is provisioned via a unified Docker Enterprise Runtime.
 
-⸻
+### Startup
+```bash
+# 1. Initialize environment
+cp .env.example .env
 
-Core Architecture
+# 2. Launch institutional runtime
+docker compose up -d
+```
 
-Platform Layers
+### Access Matrix
+| Interface | Endpoint | Authorization |
+|---|---|---|
+| **Experience Layer** | `http://localhost:3000` | `TIER_4_BOARD` |
+| **Cognition API** | `http://localhost:8000/docs` | Institutional |
+| **Grafana Core** | `http://localhost:3002` | `admin/esoteric_admin` |
+| **Prometheus Node** | `http://localhost:9090` | System |
 
-Layer 1 — Banking Intelligence Runtime
+---
 
-Visible operational banking systems:
+## 🛡️ Engineering Philosophy
 
-* Executive Intelligence
-* Treasury Intelligence
-* Governance Monitoring
-* AML Surveillance
-* Fraud Containment
-* Risk Analytics
-* Regulatory Escalation
-* Forecast Intelligence
-* Institutional Observability
+1. **No Mock Theater**: Every UI component is wired to real backend cognition APIs.
+2. **Event-Driven**: Decoupled domain services communicating via institutional event buses.
+3. **Forensic Observability**: End-to-end trace continuity and cryptographic audit trails.
+4. **Cinematic Density**: High-information density designed for institutional command centers.
 
-Layer 2 — ESOTERIC Core (Hidden)
+---
 
-Internal orchestration layer:
+## 🗺️ Roadmap
+- **Wave 6**: Multi-region Treasury real-time settlement forecasting.
+- **Wave 7**: Federated KYC cognition across institutional clusters.
+- **Wave 8**: OIDC/SAML Hardware Security Module (HSM) integration.
 
-* Adaptive Cognition
-* Institutional State Registry
-* Event Propagation
-* Cognitive Event Bus
-* Runtime Synchronization
-* Executive Awareness Engine
-* Distributed Orchestration
-* Governance Continuity
-* Telemetry Aggregation
+---
 
-⸻
-
-Enterprise Technology Stack
-
-Domain	Technology
-Backend API	FastAPI
-Runtime Engine	Python 3.11
-Warehouse	PostgreSQL 16
-UI Runtime	Streamlit
-Observability	Prometheus
-Executive Monitoring	Grafana
-Containerization	Docker
-CI/CD	GitHub Actions
-Orchestration	ECOS Runtime
-Cognitive State	Institutional Registry
-Validation	Cascade Testing Framework
-
-⸻
-
-Operational Endpoints
-
-Service	Endpoint
-OpenAPI	/api/v1/openapi.json
-Platform Health	/api/v1/platform/health
-Executive Intelligence	/api/v1/executive/intelligence
-Risk Intelligence	/api/v1/risk/intelligence
-Governance Cognition	/api/v1/governance/cognition
-Forecast Intelligence	/api/v1/forecast/intelligence
-Events Intelligence	/api/v1/events/intelligence
-Distributed Agents	/api/v1/agents/distributed
-Regulatory Escalations	/api/v1/regulatory/escalations/pending
-
-⸻
-
-Runtime Infrastructure
-
-Observability Stack
-
-Prometheus
-
-* Runtime metrics ingestion
-* Institutional telemetry
-* Drift propagation tracking
-* Event metrics collection
-
-Grafana
-
-* Executive operational dashboards
-* Institutional monitoring
-* Crisis telemetry visualization
-* Governance awareness panels
-
-Metrics Exported
-
-* System Health Score
-* Governance Drift Index
-* Liquidity Risk
-* Institutional Anomalies
-* Active Events
-* Escalation Volume
-* Runtime Synchronization State
-
-⸻
-
-Adaptive Cognition Engine
-
-The adaptive cognition layer continuously synchronizes:
-
-* Institutional Events
-* Governance Drift
-* Liquidity Stress
-* Fraud Signals
-* AML Escalations
-* Executive Awareness
-* Telemetry Propagation
-
-The ECOS runtime ensures synchronized propagation across all operational domains.
-
-⸻
-
-Crisis Cascade Simulation
-
-The platform supports institutional crisis injection and convergence testing.
-
-Supported Scenarios
-
-* Liquidity Deterioration
-* Coordinated Fraud Attacks
-* AML Smurfing Escalation
-* Governance Drift Spikes
-* Cross-System Operational Degradation
-
-Validation Framework
-
-python -m testing.final_cascade.final_cascade_runner
-
-Validation covers:
-
-* Fraud Containment
-* AML Escalation
-* Governance Orchestration
-* Observability Streaming
-* Event Synchronization
-
-⸻
-
-Local Development
-
-Clone Repository
-
-git clone <repository-url>
-cd banking-executive-insights
-
-⸻
-
-Start Enterprise Runtime
-
-Environment Setup
-
-export SECRET_KEY="esoteric-enterprise-runtime-key"
-
-⸻
-
-Start Full Platform
-
-docker compose -f docker-compose.enterprise.yml up -d
-
-⸻
-
-Access Runtime Interfaces
-
-Service	URL
-FastAPI	http://localhost:8000
-Swagger Docs	http://localhost:8000/api/v1/docs
-Streamlit HUD	http://localhost:8501
-Prometheus	http://localhost:9090
-Grafana	http://localhost:3000
-
-⸻
-
-Grafana Credentials
-
-Username: admin
-Password: esoteric_admin
-
-⸻
-
-Runtime Validation
-
-API Validation
-
-curl http://localhost:8000/api/v1/platform/health
-
-Executive Intelligence
-
-curl http://localhost:8000/api/v1/executive/intelligence
-
-Risk Intelligence
-
-curl http://localhost:8000/api/v1/risk/intelligence
-
-⸻
-
-CI/CD Pipeline
-
-GitHub Actions pipeline supports:
-
-* Runtime Validation
-* ETL Validation
-* Dependency Installation
-* Convergence Certification
-* Compilation Validation
-* Enterprise Governance Checks
-
-Workflow:
-
-* Node24 Compatible
-* Python 3.11
-* PostgreSQL Service Runtime
-
-⸻
-
-Enterprise Frontend Evolution
-
-Current runtime supports:
-
-* Executive Banking Interface
-* Treasury Cockpit
-* Governance Cockpit
-* Compliance Center
-* Observability Panels
-
-Planned evolution:
-
-* Enterprise Cognitive Shell
-* Adaptive Executive Workspace
-* AI-Native Banking UX
-* Multi-Tenant Runtime Architecture
-* Institutional Command Interface
-* Persistent Executive Intelligence Layer
-
-⸻
-
-Security
-
-* Enterprise Runtime Isolation
-* Governance Drift Monitoring
-* Regulatory Escalation Framework
-* Containerized Runtime
-* CI/CD Validation
-* Adaptive Event Traceability
-
-⸻
-
-License
-
-MIT License
-
-⸻
-
-Project Status
-
-CURRENT STATE
-
-INSTITUTIONAL_CONVERGENCE_CERTIFIED
-EXECUTIVE_RUNTIME_STABILIZED
-API_NAMESPACE_CONVERGED
-ADAPTIVE_COGNITION_OPERATIONAL
-OBSERVABILITY_SYNCHRONIZED
-
-The ESOTERIC BANK Intelligence Platform has achieved enterprise operational convergence and is prepared for continued frontend evolution and institutional runtime expansion.
+**Akash Sharma**
+Senior Software Engineer • AI Systems • Institutional Architecture

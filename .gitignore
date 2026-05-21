@@ -216,3 +216,22 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Runtime Artifacts
+ai/governance/reports/*.md
+final_*.md
+*_report.md
+*_certification.md
+system_validation/
+operationalization/
+MASTER_SYSTEM_TREE.txt
+
+# Next.js
+.next/
+out/
+node_modules/
+
+# Docker
+*.tar
+
+# Runtime
+openapi_pretty.json

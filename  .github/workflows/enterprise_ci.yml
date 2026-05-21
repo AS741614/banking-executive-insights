@@ -1,0 +1,42 @@
+name: ESOTERIC Platform CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Lint with ruff
+      run: ruff check .
+    - name: Run security scan (Bandit)
+      run: pip install bandit && bandit -r app/ ai/
+    - name: Test with pytest
+      run: pytest
+
+  build-and-push:
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Log in to Registry
+      run: echo "Login to ECR/GCR/DockerHub"
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t esoteric-platform:latest -f docker/Dockerfile.enterprise .
+        docker tag esoteric-platform:latest my-registry/esoteric-platform:latest
+        # docker push my-registry/esoteric-platform:latest

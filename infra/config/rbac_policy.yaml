@@ -1,0 +1,50 @@
+# ESOTERIC BANK - RBAC POLICY DEFINITION
+# Version: 1.0.0
+
+roles:
+  EXECUTIVE:
+    description: "Highest clearance. Full access to intelligence and dashboards."
+    permissions:
+      - read:executive_summary
+      - read:risk_intelligence
+      - read:compliance_reports
+      - execute:cognitive_query
+      - read:platform_status
+
+  COMPLIANCE_OFFICER:
+    description: "Regulatory focus. Access to AML, KYC, and governance metrics."
+    permissions:
+      - read:compliance_reports
+      - read:aml_alerts
+      - read:kyc_intelligence
+      - update:compliance_status
+      - read:platform_status
+
+  RISK_ANALYST:
+    description: "Tactical focus. Access to risk models and forecasting."
+    permissions:
+      - read:risk_intelligence
+      - read:forecasting_data
+      - execute:risk_simulation
+      - read:platform_status
+
+  PLATFORM_ADMIN:
+    description: "System maintenance. Full access to observability and runtime logs."
+    permissions:
+      - read:platform_status
+      - read:system_logs
+      - update:runtime_config
+      - execute:platform_maintenance
+
+  SYSTEM_AGENT:
+    description: "Machine-to-machine service accounts."
+    permissions:
+      - read:raw_data
+      - write:cognitive_events
+      - read:platform_status
+
+# Default global constraints
+constraints:
+  mfa_required: true
+  session_timeout_minutes: 30
+  max_failed_login_attempts: 5

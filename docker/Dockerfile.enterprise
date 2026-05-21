@@ -1,0 +1,59 @@
+# ESOTERIC Platform - Multi-Stage Enterprise Dockerfile
+FROM python:3.11-slim as base
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV PYTHONPATH /app
+
+# Institutional Security: Create non-root user
+RUN groupadd -r appgroup && useradd -r -g appgroup -s /sbin/nologin appuser
+
+WORKDIR /app
+
+# Install critical system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install application dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source and set ownership
+COPY app/ ./app/
+COPY ai/ ./ai/
+COPY ecos/ ./ecos/
+COPY runtime/ ./runtime/
+COPY warehouse/ ./warehouse/
+COPY operationalization/ ./operationalization/
+COPY src/ ./src/
+COPY infra/ ./infra/
+COPY scripts/ ./scripts/
+COPY testing/ ./testing/
+COPY README.md .
+
+# Create necessary directories and set permissions
+RUN mkdir -p /app/data /app/logs && \
+    chown -R appuser:appgroup /app
+
+# --- API Runtime Stage ---
+FROM base as api
+USER appuser
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:8000/api/v1/platform/health || exit 1
+
+# Production-grade async runner: Gunicorn with Uvicorn workers
+CMD ["sh", "-c", "gunicorn app.main:app -w ${GUNICORN_WORKERS:-4} -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --threads ${GUNICORN_THREADS:-4} --access-logfile - --error-logfile -"]
+
+# --- UI Runtime Stage ---
+FROM base as ui
+COPY ui-legacy/ ./ui/
+RUN chown -R appuser:appgroup /app/ui
+USER appuser
+EXPOSE 8501
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:8501/_stcore/health || exit 1
+CMD ["streamlit", "run", "ui/main.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
