@@ -1,6 +1,6 @@
 pandas
 numpy
-SQLAlchemy>=2.0
+SQLAlchemy>=2.0.49
 psycopg2-binary
 Faker
 python-dotenv
