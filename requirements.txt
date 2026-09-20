@@ -27,3 +27,6 @@ opentelemetry-exporter-otlp
 # tableauserverclient
 # pantab
 # tableau-hyperapi
+
+# Testing
+pytest
