@@ -60,6 +60,9 @@ jobs:
       - name: Run data quality checks
         run: python src/run_quality_checks.py
 
+      - name: Run governance unit tests
+        run: python -m pytest governance/tests/ -q
+
       - name: Run ESOTERIC Convergence Validation
         run: python -m testing.final_cascade.final_cascade_runner
 
